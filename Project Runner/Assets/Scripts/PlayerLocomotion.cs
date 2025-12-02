@@ -99,7 +99,7 @@ public class PlayerLocomotion : MonoBehaviour
         _rb.AddForce(velocityDiff * config.acceleration * controlMultiplier, ForceMode.Acceleration);
 
         if (_isGrounded)
-            _rb.linearDamping = (_moveDirection.magnitude < 0.1f) ? config.groundDrag * 2f : 0f;
+            _rb.linearDamping = (_moveDirection.magnitude < 0.1f) ? config.groundDrag : 0f;
         else
             _rb.linearDamping = config.airDrag;
 
@@ -143,4 +143,6 @@ public class PlayerLocomotion : MonoBehaviour
         Vector3 feetPosition = new Vector3(transform.position.x, _collider.bounds.min.y, transform.position.z);
         _isGrounded = Physics.CheckSphere(feetPosition, _groundCheckRadius, config.groundLayer);
     }
+
+    public bool IsGrounded => _isGrounded;
 }

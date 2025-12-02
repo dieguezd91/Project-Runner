@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f170af91c379a5d4a82320ec5ae580d0, type: 3}
   m_Name: PlayerConfig
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfigSO
-  maxSpeed: 6
-  acceleration: 70
+  maxSpeed: 10
+  acceleration: 90
   groundDrag: 8
   airDrag: 1
   rotationSpeed: 11
