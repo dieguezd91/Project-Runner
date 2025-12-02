@@ -1,148 +1,157 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class PlayerLocomotion : MonoBehaviour
 {
-    [Header("Dependencies")]
-    [SerializeField] private PlayerConfigSO config;
-    // [SerializeField] private Transform cameraTransform; // ELIMINADO del Inspector
+    [Header("Configuration")]
+    public PlayerConfigSO config;
 
-    // State
-    private Rigidbody _rb;
-    private CapsuleCollider _collider;
-    private Transform _mainCameraTransform; // Referencia interna
-    private Vector2 _inputVector;
-    private bool _isJumpRequested;
-    private bool _isGrounded;
-    private float _groundCheckRadius = 0.3f;
+    private Rigidbody rb;
+    private new Transform transform;
 
-    // Cache variables
-    private Vector3 _moveDirection;
-    private float _jumpBufferCounter;
-    private float _coyoteTimeCounter;
+    private bool isGrounded;
+    private bool wasGrounded;
+    private float lastJumpTime;
+    private float lastGroundedTime;
+    private bool jumpRequested;
+    private bool jumpCut;
+
+    private float horizontalInput;
+    private float verticalInput;
 
     private void Awake()
     {
-        _rb = GetComponent<Rigidbody>();
-        _collider = GetComponent<CapsuleCollider>();
-
-        // AUTO-REFERENCIA: Buscamos la cámara principal automáticamente
-        if (Camera.main != null)
-        {
-            _mainCameraTransform = Camera.main.transform;
-        }
-        else
-        {
-            Debug.LogError("PlayerLocomotion: No se encontró MainCamera taggeada en la escena.");
-        }
-
-        _rb.interpolation = RigidbodyInterpolation.Interpolate;
-        _rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-        _rb.freezeRotation = true;
+        rb = GetComponent<Rigidbody>();
+        transform = GetComponent<Transform>();
     }
 
     private void Update()
     {
-        HandleInput();
-
-        if (_isGrounded) _coyoteTimeCounter = config.coyoteTime;
-        else _coyoteTimeCounter -= Time.deltaTime;
-
-        if (Input.GetButtonDown("Jump")) _jumpBufferCounter = config.jumpBufferTime;
-        else _jumpBufferCounter -= Time.deltaTime;
+        ReadInput();
+        CheckGround();
+        HandleJump();
     }
 
     private void FixedUpdate()
     {
-        CheckGround();
         ApplyMovement();
         ApplyGravity();
-        HandleJump();
+        ApplyDrag();
     }
 
-    private void HandleInput()
+    private void ReadInput()
     {
-        // ... (Tu lógica de input igual)
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        _inputVector = new Vector2(h, v).normalized;
+        horizontalInput = Input.GetAxisRaw("Horizontal");
+        verticalInput = Input.GetAxisRaw("Vertical");
 
-        if (Input.GetButtonDown("Jump") && _isGrounded)
+        if (Input.GetButtonDown("Jump"))
         {
-            _isJumpRequested = true;
-        }
-    }
-
-    private void ApplyMovement()
-    {
-        if (_mainCameraTransform == null) return;
-
-        // Usamos la referencia interna _mainCameraTransform
-        Vector3 cameraForward = _mainCameraTransform.forward;
-        cameraForward.y = 0f;
-        cameraForward.Normalize();
-
-        Vector3 cameraRight = _mainCameraTransform.right;
-        cameraRight.y = 0f;
-        cameraRight.Normalize();
-
-        _moveDirection = (cameraForward * _inputVector.y + cameraRight * _inputVector.x);
-
-        // ... Resto de tu lógica de física (Velocity diff, etc) ...
-        // (Copia y pega tu bloque de lógica P-Controller aquí)
-
-        Vector3 targetVelocity = _moveDirection * config.maxSpeed;
-        Vector3 currentVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-        Vector3 velocityDiff = targetVelocity - currentVelocity;
-
-        float controlMultiplier = _isGrounded ? 1f : 0.2f;
-        _rb.AddForce(velocityDiff * config.acceleration * controlMultiplier, ForceMode.Acceleration);
-
-        if (_isGrounded)
-            _rb.linearDamping = (_moveDirection.magnitude < 0.1f) ? config.groundDrag : 0f;
-        else
-            _rb.linearDamping = config.airDrag;
-
-        // Rotación (incluida aquí para simplificar FixedUpdate)
-        if (_moveDirection != Vector3.zero)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(_moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, config.rotationSpeed * Time.fixedDeltaTime);
-        }
-    }
-
-    // ... Resto de métodos (HandleJump, ApplyGravity, CheckGround) se mantienen igual ...
-    // Asegúrate de copiar HandleJump, CheckGround y Gizmos del script anterior.
-
-    private void HandleJump()
-    {
-        if (_jumpBufferCounter > 0f && _coyoteTimeCounter > 0f)
-        {
-            _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-            _rb.AddForce(Vector3.up * config.jumpForce, ForceMode.Impulse);
-            _jumpBufferCounter = 0f;
-            _coyoteTimeCounter = 0f;
+            jumpRequested = true;
+            lastJumpTime = Time.time;
         }
 
-        if (!Input.GetButton("Jump") && _rb.linearVelocity.y > 0f)
+        if (Input.GetButtonUp("Jump") && rb.linearVelocity.y > 0)
         {
-            _rb.AddForce(Vector3.down * _rb.linearVelocity.y * (1 - config.jumpCutMultiplier), ForceMode.Impulse);
-        }
-    }
-
-    private void ApplyGravity()
-    {
-        if (_rb.linearVelocity.y < 0)
-        {
-            _rb.AddForce(Vector3.down * (Physics.gravity.y * (config.gravityMultiplier - 1) * -1), ForceMode.Acceleration);
+            jumpCut = true;
         }
     }
 
     private void CheckGround()
     {
-        Vector3 feetPosition = new Vector3(transform.position.x, _collider.bounds.min.y, transform.position.z);
-        _isGrounded = Physics.CheckSphere(feetPosition, _groundCheckRadius, config.groundLayer);
+        wasGrounded = isGrounded;
+
+        float detectionDistance = 1.1f;
+        isGrounded = Physics.Raycast(
+            transform.position,
+            Vector3.down,
+            detectionDistance,
+            config.groundLayer
+        );
+
+        if (isGrounded)
+        {
+            lastGroundedTime = Time.time;
+            jumpCut = false;
+        }
     }
 
-    public bool IsGrounded => _isGrounded;
+    private void HandleJump()
+    {
+        bool canUseCoyoteTime = Time.time - lastGroundedTime <= config.coyoteTime;
+        bool jumpInBuffer = Time.time - lastJumpTime <= config.jumpBufferTime;
+
+        if (jumpRequested && jumpInBuffer && (isGrounded || canUseCoyoteTime))
+        {
+            ExecuteJump();
+            jumpRequested = false;
+        }
+
+        if (jumpCut && rb.linearVelocity.y > 0)
+        {
+            rb.linearVelocity = new Vector3(
+                rb.linearVelocity.x,
+                rb.linearVelocity.y * config.jumpCutMultiplier,
+                rb.linearVelocity.z
+            );
+            jumpCut = false;
+        }
+    }
+
+    private void ExecuteJump()
+    {
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+        rb.AddForce(Vector3.up * config.jumpForce, ForceMode.Impulse);
+        lastGroundedTime = 0;
+    }
+
+    private void ApplyMovement()
+    {
+        Vector3 movementDirection = new Vector3(horizontalInput, 0, verticalInput).normalized;
+
+        if (movementDirection.magnitude >= 0.1f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(movementDirection);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                config.rotationSpeed * Time.fixedDeltaTime
+            );
+
+            Vector3 targetVelocity = movementDirection * config.maxSpeed;
+            Vector3 currentVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+            Vector3 accelerationForce = (targetVelocity - currentVelocity) * config.acceleration;
+
+            rb.AddForce(accelerationForce, ForceMode.Force);
+        }
+    }
+
+    private void ApplyGravity()
+    {
+        if (!isGrounded)
+        {
+            rb.AddForce(Vector3.down * config.gravityMultiplier, ForceMode.Acceleration);
+        }
+    }
+
+    private void ApplyDrag()
+    {
+        rb.linearDamping = isGrounded ? config.groundDrag : config.airDrag;
+    }
+
+    public bool IsGrounded()
+    {
+        return isGrounded;
+    }
+
+    public bool WasGrounded()
+    {
+        return wasGrounded;
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (transform == null) return;
+
+        Gizmos.color = isGrounded ? Color.green : Color.red;
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * 1.1f);
+    }
 }
