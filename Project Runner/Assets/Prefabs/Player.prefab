@@ -227,9 +227,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6660822945240645772}
+  - component: {fileID: 2778158109702548005}
+  - component: {fileID: 1764443263640273933}
   - component: {fileID: 3412328325973040220}
   - component: {fileID: 2647056474812330984}
-  - component: {fileID: 2778158109702548005}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -254,6 +255,36 @@ Transform:
   - {fileID: 8923968049143583848}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2778158109702548005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2749647183928182145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46214752fc926fd40a3eee9f4db291d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 126bc874e76539f4fbf8f67adad54f9b, type: 2}
+  driftController: {fileID: 1764443263640273933}
+  showDebugGUI: 1
+--- !u!114 &1764443263640273933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2749647183928182145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6ce3374448f78e4a9397ad287d82dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 126bc874e76539f4fbf8f67adad54f9b, type: 2}
+  rb: {fileID: 2647056474812330984}
+  showDebug: 1
 --- !u!136 &3412328325973040220
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -304,20 +335,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &2778158109702548005
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2749647183928182145}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46214752fc926fd40a3eee9f4db291d9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 126bc874e76539f4fbf8f67adad54f9b, type: 2}
-  showDebugGUI: 1
 --- !u!1 &3400527865651820697
 GameObject:
   m_ObjectHideFlags: 0

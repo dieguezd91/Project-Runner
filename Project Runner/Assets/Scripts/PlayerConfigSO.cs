@@ -26,6 +26,31 @@ public class PlayerConfigSO : ScriptableObject
     [Header("Gravedad")]
     public float gravityMultiplier = 3f;
 
+    [Header("Drift System")]
+    [Tooltip("Velocidad mínima para empezar a driftear")]
+    public float driftMinSpeed = 5f;
+
+    [Tooltip("Ángulo mínimo de giro para activar drift (en grados)")]
+    [Range(30f, 90f)]
+    public float driftAngleThreshold = 45f;
+
+    [Tooltip("Velocidad de acumulación de carga de drift (0-1 por segundo)")]
+    public float driftChargeRate = 0.8f;
+
+    [Tooltip("Velocidad de descarga cuando no hay drift activo")]
+    public float driftDischargeRate = 2f;
+
+    [Tooltip("Multiplicador de velocidad del boost")]
+    [Range(1.0f, 2.0f)]
+    public float driftBoostMultiplier = 1.3f; // +30%
+
+    [Tooltip("Duración del boost en segundos")]
+    public float driftBoostDuration = 1.5f;
+
+    [Tooltip("Reducción de fricción durante el drift (más bajo = más deslizamiento)")]
+    [Range(0.1f, 1f)]
+    public float driftFrictionMultiplier = 0.6f;
+
     [Header("Física")]
     public LayerMask groundLayer;
 }

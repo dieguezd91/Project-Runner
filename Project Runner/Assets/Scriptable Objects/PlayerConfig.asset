@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxSpeed: 10
   acceleration: 20
-  friction: 6
+  friction: 8
   accelerationCurveStart: 2.5
   accelerationCurveEnd: 0.3
   rotationSpeed: 10
@@ -23,6 +23,13 @@ MonoBehaviour:
   coyoteTime: 0.15
   jumpBufferTime: 0.1
   gravityMultiplier: 3
+  driftMinSpeed: 5
+  driftAngleThreshold: 45
+  driftChargeRate: 1.2
+  driftDischargeRate: 2
+  driftBoostMultiplier: 1.5
+  driftBoostDuration: 3
+  driftFrictionMultiplier: 0.6
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
