@@ -155,7 +155,10 @@ MonoBehaviour:
   mouseSensitivity: 1.5
   rotationSmoothTime: 0.3
   pitchLimits: {x: 0, y: 0}
-  currentDistance: 4.999997
+  autoAlignDelay: 1.5
+  autoAlignSmoothTime: 0.5
+  movementThreshold: 0.5
+  currentDistance: 5
   zoomLimits: {x: 3.5, y: 8}
   zoomSpeed: 1.5
   zoomDamping: 5
