@@ -8,6 +8,9 @@ public class PlayerLocomotion : MonoBehaviour
     [Header("Components")]
     [SerializeField] private DriftController driftController;
 
+    [Header("References")]
+    [SerializeField] private Transform cameraTransform;
+
     [Header("Debug")]
     public bool showDebugGUI = true;
 
@@ -39,6 +42,11 @@ public class PlayerLocomotion : MonoBehaviour
         if (driftController == null)
         {
             driftController = GetComponent<DriftController>();
+        }
+
+        if (cameraTransform == null && Camera.main != null)
+        {
+            cameraTransform = Camera.main.transform;
         }
     }
 
@@ -122,7 +130,21 @@ public class PlayerLocomotion : MonoBehaviour
 
     private void ApplyMomentum()
     {
-        Vector3 movementDirection = new Vector3(horizontalInput, 0, verticalInput).normalized;
+        Vector3 movementDirection = Vector3.zero;
+
+        if (cameraTransform != null)
+        {
+            // Proyectar vectores de la cámara en el plano XZ (ignorar inclinación Y)
+            Vector3 camForward = Vector3.Scale(cameraTransform.forward, new Vector3(1, 0, 1)).normalized;
+            Vector3 camRight = Vector3.Scale(cameraTransform.right, new Vector3(1, 0, 1)).normalized;
+
+            movementDirection = (camForward * verticalInput + camRight * horizontalInput).normalized;
+        }
+        else
+        {
+            // Fallback a coordenadas globales si no hay cámara
+            movementDirection = new Vector3(horizontalInput, 0, verticalInput).normalized;
+        }
 
         // Obtener velocidad máxima ajustada por boost de drift
         float effectiveMaxSpeed = config.maxSpeed;

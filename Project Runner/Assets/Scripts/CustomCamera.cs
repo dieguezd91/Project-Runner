@@ -2,98 +2,116 @@ using UnityEngine;
 
 public class CustomCamera : MonoBehaviour
 {
-    [Header("Objetivo")]
-    [SerializeField] private Transform target;
-    [SerializeField] private Vector3 targetOffset = new Vector3(0, 1.5f, 0); // Apuntar al pecho/cabeza
+    [Header("References")]
+    [SerializeField] private Transform followTarget;
+    [SerializeField] private CameraConfigSO config;
 
-    [Header("Configuración Orbital")]
-    [SerializeField] private float mouseSensitivity = 3.0f;
-    [SerializeField] private float rotationSmoothTime = 0.12f;
-    [SerializeField] private Vector2 pitchLimits = new Vector2(-40, 85); // Cuánto puedes mirar arriba/abajo
+    [Header("State (Read Only)")]
+    [SerializeField] private float currentDistance;
+    [SerializeField] private float pitch;
+    [SerializeField] private float yaw;
 
-    [Header("Configuración Zoom")]
-    [SerializeField] private float currentDistance = 6.0f;
-    [SerializeField] private Vector2 zoomLimits = new Vector2(2.0f, 12.0f);
-    [SerializeField] private float zoomSpeed = 2.0f;
-    [SerializeField] private float zoomDamping = 5.0f;
-
-    [Header("Colisión (Evitar Paredes)")]
-    [SerializeField] private LayerMask collisionLayers; // Asigna "Default", "Ground", etc. (NO Player)
-    [SerializeField] private float collisionRadius = 0.2f; // Radio de la esfera de colisión de la cámara
-    [SerializeField] private float collisionOffset = 0.2f; // Pequeño margen para que no atraviese la pared
-
-    // Variables internas de estado
-    private Vector3 _currentRotation;
-    private Vector3 _rotationVelocity; // Para el SmoothDamp
-    private float _yaw, _pitch;
-    private float _targetDistance;
+    private Vector3 targetOffset = new Vector3(0, 1.5f, 0); // Ajustar al centro de masa visual
+    private Vector3 rotationVelocity; // Para SmoothDamp
+    private float targetDistance;
+    private Vector3 currentRotationEuler;
 
     private void Start()
     {
-        // Inicializar ángulos basados en la rotación actual o default
+        if (config == null)
+        {
+            Debug.LogError("CameraSystem: Falta asignar CameraConfigSO");
+            enabled = false;
+            return;
+        }
+
+        // Inicializar rotación basada en la actual
         Vector3 angles = transform.eulerAngles;
-        _yaw = angles.y;
-        _pitch = angles.x;
-        _currentRotation = angles;
-        _targetDistance = currentDistance;
+        yaw = angles.y;
+        pitch = angles.x;
+        currentRotationEuler = angles;
+
+        currentDistance = config.defaultDistance;
+        targetDistance = currentDistance;
+
+        // Opcional: Ocultar cursor
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
-    private void LateUpdate() // LateUpdate es CRÍTICO para seguir objetos que se mueven en Update
+    private void LateUpdate()
     {
-        if (!target) return;
+        if (followTarget == null) return;
 
         HandleInput();
-        CalculatePosition();
+        MoveCamera();
     }
 
     private void HandleInput()
     {
-        // 1. Rotación Orbital (Mouse)
-        _yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
-        _pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
-        _pitch = Mathf.Clamp(_pitch, pitchLimits.x, pitchLimits.y);
+        // Rotación
+        float mouseX = Input.GetAxis("Mouse X") * config.mouseSensitivityX * Time.deltaTime;
+        float mouseY = Input.GetAxis("Mouse Y") * config.mouseSensitivityY * Time.deltaTime;
 
-        // 2. Zoom (Scroll) - Usamos targetDistance para suavizarlo después
+        yaw += mouseX;
+        pitch -= mouseY;
+        pitch = Mathf.Clamp(pitch, config.pitchLimits.x, config.pitchLimits.y);
+
+        // Zoom
         float scroll = Input.mouseScrollDelta.y;
         if (Mathf.Abs(scroll) > 0.01f)
         {
-            _targetDistance -= scroll * zoomSpeed;
-            _targetDistance = Mathf.Clamp(_targetDistance, zoomLimits.x, zoomLimits.y);
+            targetDistance -= scroll * config.zoomSpeed;
+            targetDistance = Mathf.Clamp(targetDistance, config.zoomLimits.x, config.zoomLimits.y);
         }
     }
 
-    private void CalculatePosition()
+    private void MoveCamera()
     {
-        // A. Suavizado de Rotación (SmoothDamp para sensación "premium")
-        Vector3 targetRotationEuler = new Vector3(_pitch, _yaw, 0);
-        _currentRotation = Vector3.SmoothDamp(_currentRotation, targetRotationEuler, ref _rotationVelocity, rotationSmoothTime);
-        Quaternion rotation = Quaternion.Euler(_currentRotation);
+        // 1. Calcular Rotación Suavizada
+        Vector3 targetEuler = new Vector3(pitch, yaw, 0);
+        currentRotationEuler = Vector3.SmoothDamp(currentRotationEuler, targetEuler, ref rotationVelocity, config.rotationSmoothTime);
+        Quaternion rotation = Quaternion.Euler(currentRotationEuler);
 
-        // B. Suavizado de Zoom
-        currentDistance = Mathf.Lerp(currentDistance, _targetDistance, Time.deltaTime * zoomDamping);
+        // 2. Calcular Posición Ideal (Sin colisión)
+        // Interpolamos la distancia para un zoom suave
+        currentDistance = Mathf.Lerp(currentDistance, targetDistance, Time.deltaTime * config.zoomDamping);
 
-        // C. Calcular posición deseada (Sin colisión aún)
-        // La fórmula mágica: Posición = Target + (Rotación * Vector Hacia Atrás * Distancia)
-        Vector3 finalTargetPos = target.position + targetOffset;
-        Vector3 desiredPosition = finalTargetPos - (rotation * Vector3.forward * currentDistance);
+        Vector3 targetPos = followTarget.position + targetOffset;
+        Vector3 direction = rotation * Vector3.back;
+        Vector3 desiredPosition = targetPos + (direction * currentDistance);
 
-        // D. Sistema de Colisión (Anti-Clipping)
-        // Lanzamos un Rayo/Esfera desde el jugador hacia la cámara
-        RaycastHit hit;
-        Vector3 directionToCamera = (desiredPosition - finalTargetPos).normalized;
-        float distToCamera = Vector3.Distance(finalTargetPos, desiredPosition);
-
-        if (Physics.SphereCast(finalTargetPos, collisionRadius, directionToCamera, out hit, distToCamera, collisionLayers))
+        // 3. Manejo de Colisiones (SphereCast desde el Target hacia la Cámara)
+        if (CheckCollision(targetPos, desiredPosition, out Vector3 correctedPosition))
         {
-            // Si chocamos con una pared, ponemos la cámara justo en el punto de impacto (menos un offset)
-            float hitDistance = hit.distance - collisionOffset;
-            // No permitir que se acerque más del mínimo zoom
-            hitDistance = Mathf.Max(hitDistance, zoomLimits.x);
-            desiredPosition = finalTargetPos + (directionToCamera * hitDistance);
+            transform.position = correctedPosition;
+        }
+        else
+        {
+            transform.position = desiredPosition;
         }
 
-        // E. Aplicar Transformaciones
-        transform.position = desiredPosition;
-        transform.LookAt(finalTargetPos);
+        // 4. Mirar al target
+        transform.LookAt(targetPos);
+    }
+
+    private bool CheckCollision(Vector3 from, Vector3 to, out Vector3 hitPosition)
+    {
+        hitPosition = to;
+
+        Vector3 direction = (to - from).normalized;
+        float distance = Vector3.Distance(from, to);
+
+        // Usamos SphereCast para evitar que la cámara atraviese paredes finas o esquinas
+        if (Physics.SphereCast(from, config.collisionRadius, direction, out RaycastHit hit, distance, config.collisionLayers))
+        {
+            // Si golpeamos algo, colocamos la cámara en el punto de impacto + offset de seguridad
+            // Clamp para no acercar la cámara más allá de un mínimo incómodo
+            float hitDist = Mathf.Max(hit.distance - config.collisionOffset, 0.5f);
+            hitPosition = from + (direction * hitDist);
+            return true;
+        }
+
+        return false;
     }
 }
