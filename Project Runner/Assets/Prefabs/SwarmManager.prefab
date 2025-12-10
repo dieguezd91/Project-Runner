@@ -49,9 +49,14 @@ MonoBehaviour:
   initialSwarmSize: 20
   spawnRadius: 30
   spawnBehindOffset: 15
-  spawnHeightOffset: 10
-  groundLayer:
+  groundHeight: 0
+  spawnHeightAboveGround: 0.5
+  useRaycast: 0
+  raycastStartHeight: 100
+  raycastDistance: 200
+  groundLayerMask:
     serializedVersion: 2
     m_Bits: 8
   showDebug: 1
   autoSpawnOnStart: 1
+  showGroundDetectionGizmos: 1

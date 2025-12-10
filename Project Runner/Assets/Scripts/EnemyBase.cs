@@ -4,6 +4,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Clase base para enemigos de The Swarm
 /// Implementa comportamiento Boids (cohesión, separación, alineación)
+/// v2: Con detección de suelo y constraints correctos
 /// </summary>
 public class EnemyBase : MonoBehaviour
 {
@@ -13,17 +14,28 @@ public class EnemyBase : MonoBehaviour
     [Header("Visual")]
     [SerializeField] private MeshRenderer meshRenderer;
 
+    [Header("Ground Detection")]
+    [SerializeField] private float groundCheckDistance = 3f; // Aumentado para seguridad
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private float groundCheckRadius = 0.3f;
+    [SerializeField] private float groundSnapSpeed = 10f;
+    private float halfHeight;
+
     // Estado
     public enum EnemyState
     {
-        Dormido,      // Inactivo, esperando detección
-        Persiguiendo  // Activo, persiguiendo al jugador
+        Dormido,
+        Persiguiendo
     }
 
     private EnemyState currentState = EnemyState.Dormido;
     private Transform targetTransform;
     private Rigidbody rb;
     private Vector3 velocity;
+
+    // Ground state
+    private bool isGrounded;
+    private float targetGroundHeight;
 
     // Boids
     private List<EnemyBase> neighbors = new List<EnemyBase>();
@@ -43,19 +55,31 @@ public class EnemyBase : MonoBehaviour
         if (rb == null)
         {
             rb = gameObject.AddComponent<Rigidbody>();
-            rb.useGravity = true;
-            rb.constraints = RigidbodyConstraints.FreezeRotation;
         }
+
+        // CONFIGURACIÓN CRÍTICA DEL RIGIDBODY
+        rb.useGravity = false; // Controlamos la altura manualmente
+        rb.constraints = RigidbodyConstraints.FreezeRotationX |
+                         RigidbodyConstraints.FreezeRotationZ; // Solo permitir rotación en Y
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        rb.interpolation = RigidbodyInterpolation.Interpolate; // Suavizado de movimiento
 
         if (meshRenderer == null)
         {
             meshRenderer = GetComponent<MeshRenderer>();
         }
+
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            halfHeight = col.bounds.extents.y;
+        }
+        else
+        {
+            halfHeight = 1f; // Valor fallback por defecto
+        }
     }
 
-    /// <summary>
-    /// Inicializa el enemigo desde el pool
-    /// </summary>
     public void Initialize(Vector3 position, Transform target, EnemyState initialState = EnemyState.Dormido)
     {
         transform.position = position;
@@ -66,13 +90,12 @@ public class EnemyBase : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        // Color visual según estado
+        // Detectar altura inicial del suelo
+        CheckGround();
+
         UpdateVisualState();
     }
 
-    /// <summary>
-    /// Activa el enemigo para que empiece a perseguir
-    /// </summary>
     public void Activate()
     {
         if (currentState == EnemyState.Dormido)
@@ -82,9 +105,6 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Desactiva el enemigo (volver a dormido)
-    /// </summary>
     public void Deactivate()
     {
         currentState = EnemyState.Dormido;
@@ -95,6 +115,10 @@ public class EnemyBase : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // SIEMPRE verificar y ajustar altura
+        CheckGround();
+        SnapToGround();
+
         if (currentState != EnemyState.Persiguiendo || targetTransform == null)
             return;
 
@@ -108,8 +132,9 @@ public class EnemyBase : MonoBehaviour
             separationForce * config.separationWeight +
             alignmentForce * config.alignmentWeight;
 
-        // Aplicar aceleración
-        velocity += totalForce.normalized * config.acceleration * Time.fixedDeltaTime;
+        // Aplicar aceleración (SOLO EN PLANO XZ)
+        Vector3 horizontalForce = new Vector3(totalForce.x, 0f, totalForce.z);
+        velocity += horizontalForce.normalized * config.acceleration * Time.fixedDeltaTime;
 
         // Limitar velocidad
         if (velocity.magnitude > config.baseSpeed)
@@ -117,13 +142,14 @@ public class EnemyBase : MonoBehaviour
             velocity = velocity.normalized * config.baseSpeed;
         }
 
-        // Aplicar velocidad al rigidbody
+        // Aplicar velocidad al rigidbody (MANTENER Y actual)
         rb.linearVelocity = new Vector3(velocity.x, rb.linearVelocity.y, velocity.z);
 
-        // Rotar hacia la dirección de movimiento
+        // Rotar hacia la dirección de movimiento (solo en Y)
         if (velocity.magnitude > 0.1f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(velocity);
+            Vector3 lookDirection = new Vector3(velocity.x, 0f, velocity.z);
+            Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRotation,
@@ -132,15 +158,67 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Detecta el suelo debajo del enemigo usando SphereCast
+    /// </summary>
+    private void CheckGround()
+    {
+        // CORRECCIÓN 1: Levantar el origen del raycast para que empiece ARRIBA del enemigo
+        // y no falle si el enemigo spawnea parcialmente hundido.
+        Vector3 rayOrigin = transform.position + Vector3.up * 1.5f;
+
+        RaycastHit hit;
+
+        // SphereCast hacia abajo
+        // Aumentamos la distancia para compensar que subimos el origen
+        if (Physics.SphereCast(rayOrigin, groundCheckRadius, Vector3.down, out hit, groundCheckDistance + 1.5f, groundLayer))
+        {
+            isGrounded = true;
+            // CORRECCIÓN 2: Sumar halfHeight. Ahora hoverHeight es el espacio de aire real bajo los pies.
+            targetGroundHeight = hit.point.y + halfHeight;
+        }
+        else
+        {
+            isGrounded = false;
+            // Fallback suave
+            targetGroundHeight = transform.position.y - (2f * Time.fixedDeltaTime);
+        }
+    }
+
+    /// <summary>
+    /// Ajusta suavemente la posición Y para mantener altura sobre el suelo
+    /// </summary>
+    private void SnapToGround()
+    {
+        if (!isGrounded)
+        {
+            // Si no hay suelo detectado, aplicar gravedad suave
+            Vector3 pos = transform.position;
+            pos.y -= 5f * Time.fixedDeltaTime;
+            transform.position = pos;
+            return;
+        }
+
+        // Ajustar altura suavemente usando Lerp
+        Vector3 currentPos = transform.position;
+        float newY = Mathf.Lerp(currentPos.y, targetGroundHeight, groundSnapSpeed * Time.fixedDeltaTime);
+
+        // Aplicar la nueva posición
+        transform.position = new Vector3(currentPos.x, newY, currentPos.z);
+
+        // Cancelar velocidad vertical del rigidbody
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+    }
+
     private void CalculateBoidForces()
     {
-        // Encontrar vecinos cercanos
         FindNeighbors();
 
-        // Calcular fuerza hacia el objetivo (jugador)
-        targetForce = (targetTransform.position - transform.position).normalized;
+        // Fuerza hacia el objetivo (SOLO EN PLANO XZ)
+        Vector3 directionToTarget = targetTransform.position - transform.position;
+        directionToTarget.y = 0; // Ignorar diferencia de altura
+        targetForce = directionToTarget.normalized;
 
-        // Si no hay vecinos, solo perseguir
         if (neighbors.Count == 0)
         {
             cohesionForce = Vector3.zero;
@@ -149,24 +227,29 @@ public class EnemyBase : MonoBehaviour
             return;
         }
 
-        // COHESIÓN: Moverse hacia el centro de masa de los vecinos
+        // COHESIÓN
         Vector3 centerOfMass = Vector3.zero;
         foreach (var neighbor in neighbors)
         {
             centerOfMass += neighbor.Position;
         }
         centerOfMass /= neighbors.Count;
-        cohesionForce = (centerOfMass - transform.position).normalized;
 
-        // SEPARACIÓN: Alejarse de vecinos muy cercanos
+        Vector3 toCenterOfMass = centerOfMass - transform.position;
+        toCenterOfMass.y = 0; // Solo plano XZ
+        cohesionForce = toCenterOfMass.normalized;
+
+        // SEPARACIÓN
         separationForce = Vector3.zero;
         foreach (var neighbor in neighbors)
         {
-            float distance = Vector3.Distance(transform.position, neighbor.Position);
+            Vector3 toNeighbor = transform.position - neighbor.Position;
+            toNeighbor.y = 0; // Solo plano XZ
+
+            float distance = toNeighbor.magnitude;
             if (distance < config.separationDistance && distance > 0)
             {
-                Vector3 awayFromNeighbor = (transform.position - neighbor.Position).normalized;
-                separationForce += awayFromNeighbor / distance; // Más fuerte cuanto más cerca
+                separationForce += toNeighbor.normalized / distance;
             }
         }
         if (neighbors.Count > 0)
@@ -175,11 +258,13 @@ public class EnemyBase : MonoBehaviour
         }
         separationForce = separationForce.normalized;
 
-        // ALINEACIÓN: Moverse en la dirección promedio de los vecinos
+        // ALINEACIÓN
         Vector3 averageVelocity = Vector3.zero;
         foreach (var neighbor in neighbors)
         {
-            averageVelocity += neighbor.Velocity;
+            Vector3 neighborVel = neighbor.Velocity;
+            neighborVel.y = 0; // Solo plano XZ
+            averageVelocity += neighborVel;
         }
         if (neighbors.Count > 0)
         {
@@ -219,7 +304,6 @@ public class EnemyBase : MonoBehaviour
     {
         if (meshRenderer == null) return;
 
-        // Color según estado
         switch (currentState)
         {
             case EnemyState.Dormido:
@@ -231,9 +315,6 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Devuelve el enemigo al pool
-    /// </summary>
     public void ReturnToPool()
     {
         Deactivate();
@@ -244,16 +325,30 @@ public class EnemyBase : MonoBehaviour
     {
         if (!Application.isPlaying) return;
 
-        // Dibujar radio de vecinos
+        // Radio de vecinos
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, config.neighborRadius);
 
-        // Dibujar distancia de separación
+        // Distancia de separación
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, config.separationDistance);
 
-        // Dibujar vectores de fuerza
-        if (currentState == EnemyState.Persiguiendo)
+        // Ground check
+        Gizmos.color = isGrounded ? Color.green : Color.red;
+        Vector3 rayStart = transform.position + Vector3.up * 0.1f;
+        Gizmos.DrawRay(rayStart, Vector3.down * groundCheckDistance);
+
+        if (isGrounded)
+        {
+            // Mostrar altura objetivo
+            Gizmos.color = Color.cyan;
+            Vector3 targetPos = new Vector3(transform.position.x, targetGroundHeight, transform.position.z);
+            Gizmos.DrawWireSphere(targetPos, 0.3f);
+            Gizmos.DrawLine(transform.position, targetPos);
+        }
+
+        // Vectores de fuerza (solo si está activo)
+        if (currentState == EnemyState.Persiguiendo && targetTransform != null)
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawRay(transform.position, targetForce * 2f);
@@ -261,10 +356,10 @@ public class EnemyBase : MonoBehaviour
             Gizmos.color = Color.green;
             Gizmos.DrawRay(transform.position, cohesionForce * 2f);
 
-            Gizmos.color = Color.red;
+            Gizmos.color = Color.magenta;
             Gizmos.DrawRay(transform.position, separationForce * 2f);
 
-            Gizmos.color = Color.magenta;
+            Gizmos.color = Color.yellow;
             Gizmos.DrawRay(transform.position, alignmentForce * 2f);
         }
     }

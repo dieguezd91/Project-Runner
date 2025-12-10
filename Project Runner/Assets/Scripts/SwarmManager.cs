@@ -92,23 +92,19 @@ public class SwarmManager : MonoBehaviour
 
             if (useRaycast)
             {
-                // MÉTODO 1: Raycast (puede fallar)
+                // MÉTODO 1: Raycast
                 spawnPosition = DetectGroundWithRaycast(horizontalPosition, out bool hit);
-                if (hit)
-                {
-                    raycastHits++;
-                }
-                else
-                {
-                    fixedHeightUsed++;
-                }
+                if (hit) raycastHits++;
+                else fixedHeightUsed++;
             }
             else
             {
-                // MÉTODO 2: Altura fija (SIEMPRE funciona)
+                // MÉTODO 2: Altura fija (CORREGIDO)
+                // Usamos groundHeight + spawnHeightAboveGround + un margen de seguridad (ej. 1.5f)
+                // para asegurar que caiga y no aparezca dentro del mesh.
                 spawnPosition = new Vector3(
                     horizontalPosition.x,
-                    groundHeight + spawnHeightAboveGround,
+                    groundHeight + spawnHeightAboveGround + 2.0f, // Margen de seguridad extra
                     horizontalPosition.z
                 );
                 fixedHeightUsed++;
