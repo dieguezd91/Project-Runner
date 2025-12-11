@@ -156,9 +156,24 @@ public class PlayerLocomotion : MonoBehaviour
         // Calcular velocidad objetivo
         targetHorizontalVelocity = movementDirection * effectiveMaxSpeed;
 
-        // Rotar jugador hacia la dirección de movimiento
-        if (movementDirection.magnitude >= 0.1f)
+        // Obtener velocidad horizontal actual
+        currentHorizontalVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+
+        // NUEVA LÓGICA DE ROTACIÓN: Rotar hacia donde realmente nos movemos
+        // Solo rotar si hay velocidad significativa
+        if (currentHorizontalVelocity.magnitude > 1f)
         {
+            Quaternion targetRotation = Quaternion.LookRotation(currentHorizontalVelocity);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                config.rotationSpeed * Time.fixedDeltaTime
+            );
+        }
+        else if (movementDirection.magnitude >= 0.1f)
+        {
+            // Si estamos parados pero hay input, rotar hacia el input
+            // Esto ayuda a empezar a moverse en la dirección correcta
             Quaternion targetRotation = Quaternion.LookRotation(movementDirection);
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
@@ -166,9 +181,6 @@ public class PlayerLocomotion : MonoBehaviour
                 config.rotationSpeed * Time.fixedDeltaTime
             );
         }
-
-        // Obtener velocidad horizontal actual
-        currentHorizontalVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
 
         // Actualizar sistema de drift
         if (driftController != null)
