@@ -9,17 +9,17 @@ public class SwarmManager : MonoBehaviour
 
     [Header("Initial Spawn")]
     [Tooltip("Cantidad de enemigos en la masa inicial")]
-    [SerializeField] private int initialSwarmSize = 20;
+    [SerializeField] private int initialSwarmSize;
 
     [Tooltip("Radio del círculo de spawn alrededor del jugador")]
-    [SerializeField] private float spawnRadius = 30f;
+    [SerializeField] private float spawnRadius;
 
     [Tooltip("Offset hacia atrás del jugador")]
     [SerializeField] private float spawnBehindOffset = 15f;
 
     [Header("Ground Height (SIMPLE METHOD)")]
-    [Tooltip("Altura Y del suelo (tus chunks están en -1)")]
-    [SerializeField] private float groundHeight = -1f;
+    [Tooltip("Altura Y del suelo")]
+    [SerializeField] private float groundHeight;
 
     [Tooltip("Altura SOBRE el suelo para spawnear")]
     [SerializeField] private float spawnHeightAboveGround = 0.5f;
@@ -30,7 +30,7 @@ public class SwarmManager : MonoBehaviour
     [Header("Raycast Settings (si useRaycast = true)")]
     [SerializeField] private float raycastStartHeight = 100f;
     [SerializeField] private float raycastDistance = 200f;
-    [SerializeField] private LayerMask groundLayerMask = -1;
+    [SerializeField] private LayerMask groundLayerMask;
 
     [Header("Debug")]
     [SerializeField] private bool autoSpawnOnStart = true;
@@ -39,14 +39,6 @@ public class SwarmManager : MonoBehaviour
     private List<Vector3> lastSpawnPositions = new List<Vector3>();
 
     public int ActiveEnemiesCount => activeEnemies.Count;
-
-    private void Start()
-    {
-        if (autoSpawnOnStart)
-        {
-            SpawnInitialSwarm();
-        }
-    }
 
     public void SpawnInitialSwarm()
     {
@@ -105,7 +97,7 @@ public class SwarmManager : MonoBehaviour
             EnemyBase enemy = enemyPoolManager.GetEnemy(
                 spawnPosition,
                 playerTransform,
-                EnemyBase.EnemyState.Persiguiendo
+                EnemyBase.EnemyState.Pursuing
             );
 
             activeEnemies.Add(enemy);

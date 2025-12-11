@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 0}
   enemyPoolManager: {fileID: 0}
-  initialSwarmSize: 20
+  initialSwarmSize: 0
   spawnRadius: 30
   spawnBehindOffset: 15
   groundHeight: 0
@@ -57,6 +57,4 @@ MonoBehaviour:
   groundLayerMask:
     serializedVersion: 2
     m_Bits: 8
-  showDebug: 1
-  autoSpawnOnStart: 1
-  showGroundDetectionGizmos: 1
+  autoSpawnOnStart: 0

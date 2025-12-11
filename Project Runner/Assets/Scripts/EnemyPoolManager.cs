@@ -1,15 +1,12 @@
 ﻿using UnityEngine;
 using UnityEngine.Pool;
 
-/// <summary>
-/// Gestor de pooling para enemigos - optimización de performance
-/// </summary>
 public class EnemyPoolManager : MonoBehaviour
 {
     [Header("Configuration")]
     [SerializeField] private EnemyBase enemyPrefab;
-    [SerializeField] private int initialPoolSize = 100;
-    [SerializeField] private int maxPoolSize = 200;
+    [SerializeField] private int initialPoolSize;
+    [SerializeField] private int maxPoolSize;
 
     [Header("Debug")]
     [SerializeField] private bool showDebug = true;
@@ -36,7 +33,6 @@ public class EnemyPoolManager : MonoBehaviour
             maxSize: maxPoolSize
         );
 
-        // Pre-calentamiento del pool
         EnemyBase[] prewarmedEnemies = new EnemyBase[initialPoolSize];
         for (int i = 0; i < initialPoolSize; i++)
         {
@@ -81,19 +77,13 @@ public class EnemyPoolManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Obtiene un enemigo del pool
-    /// </summary>
-    public EnemyBase GetEnemy(Vector3 position, Transform target, EnemyBase.EnemyState initialState = EnemyBase.EnemyState.Dormido)
+    public EnemyBase GetEnemy(Vector3 position, Transform target, EnemyBase.EnemyState initialState = EnemyBase.EnemyState.Sleeping)
     {
         EnemyBase enemy = enemyPool.Get();
         enemy.Initialize(position, target, initialState);
         return enemy;
     }
 
-    /// <summary>
-    /// Devuelve un enemigo al pool
-    /// </summary>
     public void ReturnEnemy(EnemyBase enemy)
     {
         if (enemy != null)
@@ -107,7 +97,7 @@ public class EnemyPoolManager : MonoBehaviour
         if (!showDebug) return;
 
         float x = 10f;
-        float y = 500f; // Debajo de otros paneles
+        float y = 500f;
         float w = 300f;
         float h = 25f;
 

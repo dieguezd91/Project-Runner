@@ -46,5 +46,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunkPrefab: {fileID: 4096019846998364744, guid: 409f125a14891a84bb264fef6b1416fd, type: 3}
   playerTransform: {fileID: 0}
+  enemyPoolManager: {fileID: 0}
   chunkSize: 50
   viewDistance: 2
+  spawnEnemiesOnGeneration: 0
+  enemiesPerChunk: 1

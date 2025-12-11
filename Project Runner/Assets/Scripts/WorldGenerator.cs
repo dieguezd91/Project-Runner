@@ -4,16 +4,31 @@ using UnityEngine.Pool;
 
 public class WorldGenerator : MonoBehaviour
 {
-    [Header("Configuration")]
+    [Header("References")]
     [SerializeField] private LevelChunk chunkPrefab;
     [SerializeField] private Transform playerTransform;
+    [SerializeField] private EnemyPoolManager enemyPoolManager;
+
+    [Header("Settings")]
     [SerializeField] private int chunkSize = 50;
-    [SerializeField] private int viewDistance = 2; // Radio de chunks (2 = grilla de 5x5)
+    [SerializeField] private int viewDistance = 2;
+
+    [Header("Procedural Spawning")]
+    [SerializeField] private bool spawnEnemiesOnGeneration = true;
+    [SerializeField] private int enemiesPerChunk = 2;
+    [Tooltip("Tiempo en segundos antes de que empiecen a aparecer enemigos")]
+    [SerializeField] private float startSpawnDelay = 5f;
 
     // State
     private Vector2Int _currentChunkCoord;
     private Dictionary<Vector2Int, LevelChunk> _activeChunks = new Dictionary<Vector2Int, LevelChunk>();
     private ObjectPool<LevelChunk> _chunkPool;
+
+    private float currentSpawnTimer;
+    private bool isSpawningEnabled = false;
+
+    public float TimeUntilSpawn => Mathf.Max(0f, currentSpawnTimer);
+    public bool IsSpawningEnabled => isSpawningEnabled;
 
     private void Awake()
     {
@@ -22,19 +37,38 @@ public class WorldGenerator : MonoBehaviour
 
     private void Start()
     {
-        // Forzamos la primera generación
+        currentSpawnTimer = startSpawnDelay;
+        if (currentSpawnTimer <= 0) isSpawningEnabled = true;
+
         UpdateVisibleChunks(true);
     }
 
     private void Update()
     {
-        // Calculamos la coordenada del chunk donde está el player
-        // Mathf.RoundToInt funciona mejor si el pivote del chunk está en el centro
+        HandleSpawnTimer();
+        HandleChunkGeneration();
+    }
+
+    private void HandleSpawnTimer()
+    {
+        if (isSpawningEnabled) return;
+
+        currentSpawnTimer -= Time.deltaTime;
+
+        if (currentSpawnTimer <= 0)
+        {
+            currentSpawnTimer = 0;
+            isSpawningEnabled = true;
+            PopulateExistingChunks();
+        }
+    }
+
+    private void HandleChunkGeneration()
+    {
         int x = Mathf.RoundToInt(playerTransform.position.x / chunkSize);
         int z = Mathf.RoundToInt(playerTransform.position.z / chunkSize);
         Vector2Int playerChunkCoord = new Vector2Int(x, z);
 
-        // Solo actualizamos si cambiamos de chunk
         if (playerChunkCoord != _currentChunkCoord)
         {
             _currentChunkCoord = playerChunkCoord;
@@ -47,7 +81,10 @@ public class WorldGenerator : MonoBehaviour
         _chunkPool = new ObjectPool<LevelChunk>(
             createFunc: () => Instantiate(chunkPrefab, transform),
             actionOnGet: (chunk) => chunk.gameObject.SetActive(true),
-            actionOnRelease: (chunk) => chunk.gameObject.SetActive(false),
+            actionOnRelease: (chunk) => {
+                chunk.Recycle();
+                chunk.gameObject.SetActive(false);
+            },
             actionOnDestroy: (chunk) => Destroy(chunk.gameObject),
             defaultCapacity: 25,
             maxSize: 50
@@ -56,44 +93,33 @@ public class WorldGenerator : MonoBehaviour
 
     private void UpdateVisibleChunks(bool forceUpdate = false)
     {
-        // 1. Identificar coordenadas que DEBEN estar visibles
         HashSet<Vector2Int> coordsToKeep = new HashSet<Vector2Int>();
-
         for (int x = -viewDistance; x <= viewDistance; x++)
         {
             for (int y = -viewDistance; y <= viewDistance; y++)
             {
-                Vector2Int offset = new Vector2Int(x, y);
-                coordsToKeep.Add(_currentChunkCoord + offset);
+                coordsToKeep.Add(_currentChunkCoord + new Vector2Int(x, y));
             }
         }
 
-        // 2. Limpiar chunks viejos (que ya no están en coordsToKeep)
-        // Usamos una lista temporal para evitar modificar el Dictionary mientras iteramos
         List<Vector2Int> coordsToRemove = new List<Vector2Int>();
-
         foreach (var kvp in _activeChunks)
         {
             if (!coordsToKeep.Contains(kvp.Key))
-            {
                 coordsToRemove.Add(kvp.Key);
-            }
         }
 
         foreach (var coord in coordsToRemove)
         {
             LevelChunk chunkToRemove = _activeChunks[coord];
-            _chunkPool.Release(chunkToRemove); // Devuelve al pool
+            _chunkPool.Release(chunkToRemove);
             _activeChunks.Remove(coord);
         }
 
-        // 3. Spawneamos los nuevos
         foreach (var coord in coordsToKeep)
         {
             if (!_activeChunks.ContainsKey(coord))
-            {
                 SpawnChunk(coord);
-            }
         }
     }
 
@@ -101,11 +127,54 @@ public class WorldGenerator : MonoBehaviour
     {
         LevelChunk newChunk = _chunkPool.Get();
 
-        // Posicionamiento matemático: Coord * Tamaño
         Vector3 position = new Vector3(coord.x * chunkSize, 0, coord.y * chunkSize);
         newChunk.transform.position = position;
-        newChunk.Setup(coord);
+
+        newChunk.Setup(coord, enemyPoolManager, playerTransform);
+
+        if (isSpawningEnabled)
+        {
+            TrySpawnEnemiesInChunk(newChunk, coord);
+        }
 
         _activeChunks.Add(coord, newChunk);
+    }
+
+    private void PopulateExistingChunks()
+    {
+        Debug.Log("Survival Started! Spawning initial wave...");
+        foreach (var kvp in _activeChunks)
+        {
+            TrySpawnEnemiesInChunk(kvp.Value, kvp.Key);
+        }
+    }
+
+    private void TrySpawnEnemiesInChunk(LevelChunk chunk, Vector2Int coord)
+    {
+        if (!spawnEnemiesOnGeneration || enemiesPerChunk <= 0) return;
+
+        Vector2Int distToPlayer = coord - _currentChunkCoord;
+
+        bool isSafeZone = Mathf.Abs(distToPlayer.x) <= 1 && Mathf.Abs(distToPlayer.y) <= 1;
+
+        if (!isSafeZone)
+        {
+            chunk.PopulateEnemies(chunkSize, enemiesPerChunk);
+        }
+    }
+
+    private void OnGUI()
+    {
+        if (currentSpawnTimer > 0)
+        {
+            GUIStyle style = new GUIStyle(GUI.skin.label);
+            style.fontSize = 24;
+            style.fontStyle = FontStyle.Bold;
+            style.normal.textColor = Color.red;
+            style.alignment = TextAnchor.MiddleCenter;
+
+            GUI.Label(new Rect(Screen.width / 2 - 100, 50, 200, 50),
+                $"SURVIVAL IN: {currentSpawnTimer:F1}", style);
+        }
     }
 }

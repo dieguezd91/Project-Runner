@@ -269,7 +269,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 126bc874e76539f4fbf8f67adad54f9b, type: 2}
   driftController: {fileID: 1764443263640273933}
-  cameraTransform: {fileID: 0}
+  cameraTransform: {fileID: 8923968049143583848}
   showDebugGUI: 1
 --- !u!114 &1764443263640273933
 MonoBehaviour:
