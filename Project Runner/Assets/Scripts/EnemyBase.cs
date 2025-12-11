@@ -192,21 +192,26 @@ public class EnemyBase : MonoBehaviour
     {
         if (!isGrounded)
         {
-            // Si no hay suelo detectado, aplicar gravedad suave
-            Vector3 pos = transform.position;
-            pos.y -= 5f * Time.fixedDeltaTime;
-            transform.position = pos;
+            // Gravedad manual suave si está en el aire
+            transform.position += Vector3.down * 5f * Time.fixedDeltaTime;
             return;
         }
 
-        // Ajustar altura suavemente usando Lerp
         Vector3 currentPos = transform.position;
-        float newY = Mathf.Lerp(currentPos.y, targetGroundHeight, groundSnapSpeed * Time.fixedDeltaTime);
 
-        // Aplicar la nueva posición
-        transform.position = new Vector3(currentPos.x, newY, currentPos.z);
+        // CORRECCIÓN: Usar un umbral pequeño. Si está muy cerca, hacemos snap directo.
+        if (Mathf.Abs(currentPos.y - targetGroundHeight) < 0.05f)
+        {
+            transform.position = new Vector3(currentPos.x, targetGroundHeight, currentPos.z);
+        }
+        else
+        {
+            // CORRECCIÓN: Usar MoveTowards en lugar de Lerp para movimiento lineal y estable
+            float newY = Mathf.MoveTowards(currentPos.y, targetGroundHeight, groundSnapSpeed * Time.fixedDeltaTime);
+            transform.position = new Vector3(currentPos.x, newY, currentPos.z);
+        }
 
-        // Cancelar velocidad vertical del rigidbody
+        // Asegurar que no haya fuerzas físicas verticales residuales
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
     }
 

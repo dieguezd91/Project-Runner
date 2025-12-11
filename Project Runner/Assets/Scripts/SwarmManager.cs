@@ -1,10 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Gestor principal de The Swarm
-/// v3: Solución SIMPLE - usa la altura del chunk directamente
-/// </summary>
 public class SwarmManager : MonoBehaviour
 {
     [Header("References")]
@@ -37,9 +33,7 @@ public class SwarmManager : MonoBehaviour
     [SerializeField] private LayerMask groundLayerMask = -1;
 
     [Header("Debug")]
-    [SerializeField] private bool showDebug = true;
     [SerializeField] private bool autoSpawnOnStart = true;
-    [SerializeField] private bool showGroundDetectionGizmos = true;
 
     private List<EnemyBase> activeEnemies = new List<EnemyBase>();
     private List<Vector3> lastSpawnPositions = new List<Vector3>();
@@ -92,19 +86,15 @@ public class SwarmManager : MonoBehaviour
 
             if (useRaycast)
             {
-                // MÉTODO 1: Raycast
                 spawnPosition = DetectGroundWithRaycast(horizontalPosition, out bool hit);
                 if (hit) raycastHits++;
                 else fixedHeightUsed++;
             }
             else
             {
-                // MÉTODO 2: Altura fija (CORREGIDO)
-                // Usamos groundHeight + spawnHeightAboveGround + un margen de seguridad (ej. 1.5f)
-                // para asegurar que caiga y no aparezca dentro del mesh.
                 spawnPosition = new Vector3(
                     horizontalPosition.x,
-                    groundHeight + spawnHeightAboveGround + 2.0f, // Margen de seguridad extra
+                    groundHeight + spawnHeightAboveGround + 2.0f,
                     horizontalPosition.z
                 );
                 fixedHeightUsed++;
@@ -120,25 +110,6 @@ public class SwarmManager : MonoBehaviour
 
             activeEnemies.Add(enemy);
             successfulSpawns++;
-        }
-
-        if (showDebug)
-        {
-            Debug.Log($"<color=cyan>═══════════════════════════════════════</color>");
-            Debug.Log($"<color=cyan>SWARM SPAWNED</color>");
-            Debug.Log($"<color=white>Enemies: {successfulSpawns}/{initialSwarmSize}</color>");
-
-            if (useRaycast)
-            {
-                Debug.Log($"<color=green>Raycast hits: {raycastHits}</color>");
-                Debug.Log($"<color=yellow>Fixed height used: {fixedHeightUsed}</color>");
-            }
-            else
-            {
-                Debug.Log($"<color=white>Method: FIXED HEIGHT ({groundHeight + spawnHeightAboveGround})</color>");
-            }
-
-            Debug.Log($"<color=cyan>═══════════════════════════════════════</color>");
         }
     }
 
@@ -157,18 +128,7 @@ public class SwarmManager : MonoBehaviour
         {
             hit = true;
 
-            if (showDebug && showGroundDetectionGizmos)
-            {
-                Debug.DrawLine(rayStart, hitInfo.point, Color.green, 5f);
-            }
-
             return hitInfo.point + Vector3.up * spawnHeightAboveGround;
-        }
-
-        // Fallback: usar altura fija
-        if (showDebug && showGroundDetectionGizmos)
-        {
-            Debug.DrawLine(rayStart, rayStart + Vector3.down * raycastDistance, Color.red, 5f);
         }
 
         return new Vector3(
@@ -190,11 +150,6 @@ public class SwarmManager : MonoBehaviour
 
         activeEnemies.Clear();
         lastSpawnPositions.Clear();
-
-        if (showDebug)
-        {
-            Debug.Log("<color=red>Swarm cleared</color>");
-        }
     }
 
     public void RestartSwarm()
@@ -203,34 +158,8 @@ public class SwarmManager : MonoBehaviour
         SpawnInitialSwarm();
     }
 
-    private void Update()
-    {
-        if (showDebug)
-        {
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                RestartSwarm();
-            }
-
-            if (Input.GetKeyDown(KeyCode.C))
-            {
-                ClearSwarm();
-            }
-
-            // Toggle raycast mode
-            if (Input.GetKeyDown(KeyCode.M))
-            {
-                useRaycast = !useRaycast;
-                Debug.Log($"<color=yellow>Detection mode: {(useRaycast ? "RAYCAST" : "FIXED HEIGHT")}</color>");
-                RestartSwarm();
-            }
-        }
-    }
-
     private void OnDrawGizmos()
     {
-        if (!showGroundDetectionGizmos) return;
-
         if (!Application.isPlaying && playerTransform != null)
         {
             Vector3 spawnCenter = playerTransform.position - playerTransform.forward * spawnBehindOffset;
@@ -287,8 +216,6 @@ public class SwarmManager : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!showDebug) return;
-
         float x = 10f;
         float y = 610f;
         float w = 400f;
