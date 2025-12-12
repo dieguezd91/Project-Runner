@@ -19,6 +19,12 @@ public class WorldGenerator : MonoBehaviour
     [Tooltip("Tiempo en segundos antes de que empiecen a aparecer enemigos")]
     [SerializeField] private float startSpawnDelay = 5f;
 
+    [Header("Obstacles")]
+    [SerializeField] private ObstaclePoolManager obstaclePoolManager;
+    [SerializeField] private bool spawnObstaclesOnGeneration = true;
+    [SerializeField] private int obstaclesPerChunk = 5;
+    [SerializeField] private float minDistanceBetweenObstacles = 4f;
+
     // State
     private Vector2Int _currentChunkCoord;
     private Dictionary<Vector2Int, LevelChunk> _activeChunks = new Dictionary<Vector2Int, LevelChunk>();
@@ -130,7 +136,12 @@ public class WorldGenerator : MonoBehaviour
         Vector3 position = new Vector3(coord.x * chunkSize, 0, coord.y * chunkSize);
         newChunk.transform.position = position;
 
-        newChunk.Setup(coord, enemyPoolManager, playerTransform);
+        newChunk.Setup(coord, enemyPoolManager, obstaclePoolManager, playerTransform);
+
+        if (spawnObstaclesOnGeneration && obstaclePoolManager != null)
+        {
+            newChunk.PopulateObstacles(chunkSize, obstaclesPerChunk, minDistanceBetweenObstacles);
+        }
 
         if (isSpawningEnabled)
         {
