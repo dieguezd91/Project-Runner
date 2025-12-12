@@ -13,6 +13,11 @@ public class WorldGenerator : MonoBehaviour
     [SerializeField] private int chunkSize = 50;
     [SerializeField] private int viewDistance = 2;
 
+    [Header("Terrain Variety")]
+    [SerializeField] private TerrainConfigSO terrainConfig;
+    [Tooltip("Si es true, usa terrenos procedurales. Si es false, usa el chunk prefab básico.")]
+    [SerializeField] private bool useProceduralTerrain = true;
+
     [Header("Procedural Spawning")]
     [SerializeField] private bool spawnEnemiesOnGeneration = true;
     [SerializeField] private int enemiesPerChunk = 2;
@@ -38,6 +43,7 @@ public class WorldGenerator : MonoBehaviour
 
     private void Awake()
     {
+        ValidateTerrainConfig();
         InitializePool();
     }
 
@@ -53,6 +59,15 @@ public class WorldGenerator : MonoBehaviour
     {
         HandleSpawnTimer();
         HandleChunkGeneration();
+    }
+
+    private void ValidateTerrainConfig()
+    {
+        if (useProceduralTerrain && terrainConfig == null)
+        {
+            Debug.LogWarning("Procedural terrain enabled but no TerrainConfig assigned! Falling back to basic chunks.");
+            useProceduralTerrain = false;
+        }
     }
 
     private void HandleSpawnTimer()
@@ -136,7 +151,14 @@ public class WorldGenerator : MonoBehaviour
         Vector3 position = new Vector3(coord.x * chunkSize, 0, coord.y * chunkSize);
         newChunk.transform.position = position;
 
-        newChunk.Setup(coord, enemyPoolManager, obstaclePoolManager, playerTransform);
+        if (useProceduralTerrain && terrainConfig != null)
+        {
+            newChunk.SetupWithTerrain(coord, enemyPoolManager, obstaclePoolManager, playerTransform, terrainConfig, chunkSize);
+        }
+        else
+        {
+            newChunk.Setup(coord, enemyPoolManager, obstaclePoolManager, playerTransform);
+        }
 
         if (spawnObstaclesOnGeneration && obstaclePoolManager != null)
         {

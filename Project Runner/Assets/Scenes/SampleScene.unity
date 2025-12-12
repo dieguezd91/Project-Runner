@@ -516,17 +516,9 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1173080089}
     - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
-      propertyPath: obstaclesPerChunk
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: obstaclePoolManager
       value: 
       objectReference: {fileID: 574932851}
-    - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
-      propertyPath: minDistanceBetweenObstacles
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 8692277167890053769, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: m_Name
       value: WorldGenerator

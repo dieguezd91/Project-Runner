@@ -3,130 +3,275 @@ using UnityEngine;
 
 public class LevelChunk : MonoBehaviour
 {
-    public Vector2Int Coordinate { get; private set; }
+    [Header("Debug")]
+    [SerializeField] private bool showDebug;
 
+    // Referencias
+    private Vector2Int chunkCoordinate;
     private EnemyPoolManager enemyPoolManager;
     private ObstaclePoolManager obstaclePoolManager;
     private Transform playerTransform;
 
+    // Estado interno
     private List<EnemyBase> spawnedEnemies = new List<EnemyBase>();
     private List<GameObject> spawnedObstacles = new List<GameObject>();
+    private List<GameObject> terrainInstances = new List<GameObject>();
 
-    public void Setup(Vector2Int coord, EnemyPoolManager enemyPool, ObstaclePoolManager obstaclePool, Transform player)
+    // Componentes originales del prefab (se ocultan al usar terrenos procedurales)
+    private MeshRenderer originalMeshRenderer;
+    private MeshCollider originalMeshCollider;
+
+    public Vector2Int Coordinate => chunkCoordinate;
+
+    private void Awake()
     {
-        Coordinate = coord;
+        originalMeshRenderer = GetComponent<MeshRenderer>();
+        originalMeshCollider = GetComponent<MeshCollider>();
+    }
+
+    public void Setup(Vector2Int coordinate, EnemyPoolManager enemyPool, ObstaclePoolManager obstaclePool, Transform player)
+    {
+        chunkCoordinate = coordinate;
         enemyPoolManager = enemyPool;
         obstaclePoolManager = obstaclePool;
         playerTransform = player;
+
+        if (showDebug)
+        {
+            Debug.Log($"Chunk {coordinate} Setup complete");
+        }
     }
 
-    public void PopulateEnemies(int chunkSize, int count)
+    public void SetupWithTerrain(Vector2Int coordinate, EnemyPoolManager enemyPool, ObstaclePoolManager obstaclePool,
+                                 Transform player, TerrainConfigSO terrainConfig, float chunkSize)
+    {
+        Setup(coordinate, enemyPool, obstaclePool, player);
+        GenerateTerrainVariants(terrainConfig, chunkSize);
+    }
+
+    private void GenerateTerrainVariants(TerrainConfigSO terrainConfig, float chunkSize)
+    {
+        if (terrainConfig == null)
+        {
+            Debug.LogWarning("No terrain config provided, using default chunk mesh");
+            return;
+        }
+
+        HideOriginalMesh();
+        ClearPreviousTerrainInstances();
+
+        if (terrainConfig.oneTerrainPerChunk)
+        {
+            CreateSingleTerrainVariant(terrainConfig, chunkSize);
+        }
+        else
+        {
+            CreateSubdividedTerrain(terrainConfig, chunkSize);
+        }
+    }
+
+    private void HideOriginalMesh()
+    {
+        if (originalMeshRenderer != null) originalMeshRenderer.enabled = false;
+        if (originalMeshCollider != null) originalMeshCollider.enabled = false;
+    }
+
+    private void ShowOriginalMesh()
+    {
+        if (originalMeshRenderer != null) originalMeshRenderer.enabled = true;
+        if (originalMeshCollider != null) originalMeshCollider.enabled = true;
+    }
+
+    private void ClearPreviousTerrainInstances()
+    {
+        foreach (var instance in terrainInstances)
+        {
+            if (instance != null)
+            {
+                Destroy(instance);
+            }
+        }
+        terrainInstances.Clear();
+    }
+
+    private void CreateSingleTerrainVariant(TerrainConfigSO terrainConfig, float chunkSize)
+    {
+        GameObject terrainPrefab = terrainConfig.GetRandomTerrainPrefab();
+        if (terrainPrefab == null) return;
+
+        GameObject terrainInstance = Instantiate(terrainPrefab, transform);
+        terrainInstance.transform.localPosition = Vector3.zero;
+
+        ScaleTerrainToChunkSize(terrainInstance, chunkSize);
+
+        terrainInstances.Add(terrainInstance);
+    }
+
+    private void CreateSubdividedTerrain(TerrainConfigSO terrainConfig, float chunkSize)
+    {
+        int subdivisions = terrainConfig.subdivisionsPerChunk;
+        float subChunkSize = chunkSize / subdivisions;
+
+        for (int x = 0; x < subdivisions; x++)
+        {
+            for (int z = 0; z < subdivisions; z++)
+            {
+                GameObject terrainPrefab = terrainConfig.GetRandomTerrainPrefab();
+                if (terrainPrefab == null) continue;
+
+                GameObject terrainInstance = Instantiate(terrainPrefab, transform);
+
+                Vector3 localPosition = new Vector3(
+                    (x - subdivisions / 2f + 0.5f) * subChunkSize,
+                    0f,
+                    (z - subdivisions / 2f + 0.5f) * subChunkSize
+                );
+
+                terrainInstance.transform.localPosition = localPosition;
+
+                ScaleTerrainToChunkSize(terrainInstance, subChunkSize);
+
+                terrainInstances.Add(terrainInstance);
+            }
+        }
+    }
+
+    private void ScaleTerrainToChunkSize(GameObject terrainInstance, float targetSize)
+    {
+        MeshFilter meshFilter = terrainInstance.GetComponent<MeshFilter>();
+        if (meshFilter == null || meshFilter.sharedMesh == null)
+        {
+            Debug.LogWarning($"Terrain prefab {terrainInstance.name} missing MeshFilter/Mesh");
+            return;
+        }
+
+        Bounds meshBounds = meshFilter.sharedMesh.bounds;
+        float meshSizeX = meshBounds.size.x;
+        float meshSizeZ = meshBounds.size.z;
+
+        float scaleFactorX = targetSize / meshSizeX;
+        float scaleFactorZ = targetSize / meshSizeZ;
+
+        terrainInstance.transform.localScale = new Vector3(scaleFactorX, 1f, scaleFactorZ);
+    }
+
+    public void PopulateEnemies(float chunkSize, int count)
     {
         if (enemyPoolManager == null || count <= 0) return;
 
-        SpawnProceduralEnemies(chunkSize, count);
-    }
-
-    /// <summary>
-    /// Spawna obstáculos proceduralmente en el chunk
-    /// </summary>
-    public void PopulateObstacles(int chunkSize, int count, float minDistance)
-    {
-        if (obstaclePoolManager == null || count <= 0) return;
-
-        SpawnProceduralObstacles(chunkSize, count, minDistance);
-    }
-
-    private void SpawnProceduralEnemies(int chunkSize, int count)
-    {
-        if (enemyPoolManager == null) return;
-
         for (int i = 0; i < count; i++)
         {
-            float randomX = Random.Range(-chunkSize / 2f, chunkSize / 2f);
-            float randomZ = Random.Range(-chunkSize / 2f, chunkSize / 2f);
-
-            Vector3 spawnPos = transform.position + new Vector3(randomX, 2f, randomZ);
+            Vector3 randomPos = GetRandomPositionInChunk(chunkSize);
 
             EnemyBase enemy = enemyPoolManager.GetEnemy(
-                spawnPos,
+                randomPos,
                 playerTransform,
                 EnemyBase.EnemyState.Sleeping
             );
 
-            if (enemy != null)
-            {
-                spawnedEnemies.Add(enemy);
-            }
+            spawnedEnemies.Add(enemy);
+        }
+
+        if (showDebug)
+        {
+            Debug.Log($"Chunk {chunkCoordinate}: Spawned {count} enemies");
         }
     }
 
-    private void SpawnProceduralObstacles(int chunkSize, int count, float minDistance)
+    public void PopulateObstacles(float chunkSize, int count, float minDistance)
     {
-        if (obstaclePoolManager == null) return;
+        if (obstaclePoolManager == null || count <= 0) return;
 
         List<Vector3> spawnedPositions = new List<Vector3>();
-
         int attempts = 0;
-        int maxAttempts = count * 10; // Evitar loops infinitos
+        int maxAttempts = count * 10;
 
         while (spawnedObstacles.Count < count && attempts < maxAttempts)
         {
             attempts++;
+            Vector3 randomPos = GetRandomPositionInChunk(chunkSize);
 
-            // Posición aleatoria dentro del chunk
-            float randomX = Random.Range(-chunkSize / 2f, chunkSize / 2f);
-            float randomZ = Random.Range(-chunkSize / 2f, chunkSize / 2f);
-
-            Vector3 candidatePos = transform.position + new Vector3(randomX, 0f, randomZ);
-
-            // Verificar distancia mínima con obstáculos ya spawneados
-            bool tooClose = false;
-            foreach (var pos in spawnedPositions)
+            if (IsPositionValid(randomPos, spawnedPositions, minDistance))
             {
-                if (Vector3.Distance(candidatePos, pos) < minDistance)
+                Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+                GameObject obstacle = obstaclePoolManager.GetRandomObstacle(randomPos, randomRotation);
+                if (obstacle != null)
                 {
-                    tooClose = true;
-                    break;
+                    spawnedObstacles.Add(obstacle);
+                    spawnedPositions.Add(randomPos);
                 }
             }
+        }
 
-            if (tooClose) continue;
+        if (showDebug)
+        {
+            Debug.Log($"Chunk {chunkCoordinate}: Spawned {spawnedObstacles.Count}/{count} obstacles in {attempts} attempts");
+        }
+    }
 
-            // Spawnear obstáculo
-            GameObject obstacle = obstaclePoolManager.GetRandomObstacle(
-                candidatePos,
-                Quaternion.identity
+    private Vector3 GetRandomPositionInChunk(float chunkSize)
+    {
+        float halfSize = chunkSize / 2f;
+
+        float randomX = Random.Range(-halfSize, halfSize);
+        float randomZ = Random.Range(-halfSize, halfSize);
+
+        return transform.position + new Vector3(randomX, 0, randomZ);
+    }
+
+    private bool IsPositionValid(Vector3 position, List<Vector3> existingPositions, float minDistance)
+    {
+        foreach (var existingPos in existingPositions)
+        {
+            float distance = Vector3.Distance(
+                new Vector3(position.x, 0, position.z),
+                new Vector3(existingPos.x, 0, existingPos.z)
             );
 
-            if (obstacle != null)
+            if (distance < minDistance)
             {
-                spawnedObstacles.Add(obstacle);
-                spawnedPositions.Add(candidatePos);
+                return false;
             }
         }
+
+        return true;
     }
 
     public void Recycle()
     {
-        // Reciclar enemigos
         foreach (var enemy in spawnedEnemies)
         {
-            if (enemy != null && enemy.gameObject.activeInHierarchy)
+            if (enemy != null)
             {
                 enemyPoolManager.ReturnEnemy(enemy);
             }
         }
         spawnedEnemies.Clear();
 
-        // Reciclar obstáculos
         foreach (var obstacle in spawnedObstacles)
         {
-            if (obstacle != null && obstacle.activeInHierarchy)
+            if (obstacle != null && obstaclePoolManager != null)
             {
                 obstaclePoolManager.ReturnObstacle(obstacle);
             }
         }
         spawnedObstacles.Clear();
+
+        ClearPreviousTerrainInstances();
+        ShowOriginalMesh();
+
+        if (showDebug)
+        {
+            Debug.Log($"Chunk {chunkCoordinate} recycled");
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (showDebug && Application.isPlaying)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireCube(transform.position, Vector3.one * 50f);
+        }
     }
 }

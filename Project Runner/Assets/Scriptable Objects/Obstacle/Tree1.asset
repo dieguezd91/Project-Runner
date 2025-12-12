@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: Tree1
   m_EditorClassIdentifier: 
   prefab: {fileID: 113998, guid: 1fedb5571d445274782330b0eea48e80, type: 3}
-  spawnWeight: 50
+  spawnWeight: 30
   randomRotation: 1
   randomScale: 0
   minScale: 0.8
   maxScale: 1.2
-  minDistanceBetweenObstacles: 4
+  minDistanceBetweenObstacles: 5
   heightOffset: 0
   obstacleType: 1

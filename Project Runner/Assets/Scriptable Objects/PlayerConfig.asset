@@ -12,22 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9d235ff68cb6dc4b8d36d70102fc55f, type: 3}
   m_Name: PlayerConfig
   m_EditorClassIdentifier: 
-  maxSpeed: 10
-  acceleration: 20
+  maxSpeed: 15
+  acceleration: 25
   friction: 8
   accelerationCurveStart: 2.5
   accelerationCurveEnd: 0.3
-  rotationSpeed: 10
+  rotationSpeed: 12
   jumpForce: 15
   jumpCutMultiplier: 0.5
   coyoteTime: 0.15
   jumpBufferTime: 0.1
-  gravityMultiplier: 3
+  gravityMultiplier: 4
   driftMinSpeed: 5
   driftAngleThreshold: 45
   driftChargeRate: 1.2
   driftDischargeRate: 2
-  driftBoostMultiplier: 1.5
+  driftBoostMultiplier: 2
   driftBoostDuration: 3
   driftFrictionMultiplier: 0.6
   groundLayer:
