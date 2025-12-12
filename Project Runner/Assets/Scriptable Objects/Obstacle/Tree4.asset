@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f450a3cc37385344846922b19b0e04a, type: 3}
   m_Name: Tree4
   m_EditorClassIdentifier: 
-  prefab: {fileID: 100000, guid: 9084f27c4de0b4646940b7277513c1de, type: 3}
+  prefab: {fileID: 135026, guid: d556d30cab334dd449000218c87322ef, type: 3}
   spawnWeight: 50
   randomRotation: 1
   randomScale: 0
