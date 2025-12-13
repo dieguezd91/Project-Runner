@@ -44,8 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1f3b8e8b24df264ca0936942441b7da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerTransform: {fileID: 0}
-  enemyPoolManager: {fileID: 0}
+  playerTransform: {fileID: 6660822945240645772, guid: bd57d806fd60e434a9bd254152633741, type: 3}
+  enemyPoolManager: {fileID: 3266370689332283712, guid: 42b498abd3a3c1b4bb6086ce9db0c23e, type: 3}
   initialSwarmSize: 0
   spawnRadius: 30
   spawnBehindOffset: 15

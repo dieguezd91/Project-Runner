@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7275275787739240406
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4640934304837857181}
+  - component: {fileID: 768827823310292592}
+  m_Layer: 0
+  m_Name: DecorationPoolManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4640934304837857181
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7275275787739240406}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &768827823310292592
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7275275787739240406}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37fd2fbaef3807143b2db2c113fca5f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  decorationConfigSO:
+  - {fileID: 11400000, guid: 30e1a6ea4d276f64db967bf095f87ab8, type: 2}
+  - {fileID: 11400000, guid: beff2362f4cecf4459a9b2e8c91b6de7, type: 2}
+  - {fileID: 11400000, guid: 9927996f2b44a314c9998e10c4855f2a, type: 2}
+  - {fileID: 11400000, guid: 9656fb05c350f4041a7cdd3dd25f3f6d, type: 2}
+  - {fileID: 11400000, guid: 65d0c7e5a3afe2b48b697e4eaf280ab2, type: 2}
+  - {fileID: 11400000, guid: 2155e0ea56737824d87c458aa64a68ac, type: 2}
+  - {fileID: 11400000, guid: d116d433c5310c44abfa9e1f18fdce65, type: 2}
+  - {fileID: 11400000, guid: 206ecae25dc0bbb458004965ed9da274, type: 2}
+  - {fileID: 11400000, guid: 92d1e2f6f9441cc4cab7cb670c493884, type: 2}
+  - {fileID: 11400000, guid: a39619007dd500e43aac68554e7672b3, type: 2}
+  - {fileID: 11400000, guid: 2d86834d9574b8b4caf8110672344692, type: 2}
+  - {fileID: 11400000, guid: 488476341b9f4ea40ba6b2c3861e6bc0, type: 2}
+  - {fileID: 11400000, guid: 0be4ce7f1eb99cb4da854d94749d17ef, type: 2}
+  - {fileID: 11400000, guid: 1ddbf359b4768294b8e3a307e9e4b185, type: 2}
+  - {fileID: 11400000, guid: 82bc2d36e334c404987e085ac986eb46, type: 2}
+  - {fileID: 11400000, guid: ccdfbd38eb5f5034ea06f1a680e3d09d, type: 2}
+  - {fileID: 11400000, guid: 92143bd1e20cb7c4aa6649ffa9a6f174, type: 2}
+  - {fileID: 11400000, guid: 054e7a652b9f07644a5a25bd355941d0, type: 2}
+  - {fileID: 11400000, guid: b03d4701cd0b21e459a5ec1d20ba7aa3, type: 2}
+  - {fileID: 11400000, guid: e31ca9221756ece468a3e73ba12b796f, type: 2}
+  - {fileID: 11400000, guid: 093c808e9ee59f64ea8fad1815808bca, type: 2}
+  initialPoolSizePerType: 50
+  maxPoolSizePerType: 200
+  showDebug: 0

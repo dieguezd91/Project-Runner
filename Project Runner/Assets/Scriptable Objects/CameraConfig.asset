@@ -16,7 +16,7 @@ MonoBehaviour:
   mouseSensitivityY: 150
   rotationSmoothTime: 0.3
   pitchLimits: {x: 0, y: 0}
-  defaultDistance: 6
+  defaultDistance: 10
   zoomLimits: {x: 3.5, y: 8}
   zoomSpeed: 1.5
   zoomDamping: 5

@@ -9,15 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8f450a3cc37385344846922b19b0e04a, type: 3}
-  m_Name: Tree3
+  m_Script: {fileID: 11500000, guid: 7b36e646801ec0041938ccd58d7c2341, type: 3}
+  m_Name: Flowers
   m_EditorClassIdentifier: 
-  prefab: {fileID: 134014, guid: 1a2e1c6550b2a8d4590347dd6573d878, type: 3}
-  spawnWeight: 0.5
+  prefab: {fileID: 142994, guid: d6389bfdb7e456640b3a45339aac60a4, type: 3}
+  spawnWeight: 50
   randomRotation: 1
   randomScale: 0
   minScale: 0.8
   maxScale: 1.2
-  minDistanceBetweenObstacles: 10
   heightOffset: 0
-  obstacleType: 1
+  category: General
+  decorationName: SM_Env_Flower_01

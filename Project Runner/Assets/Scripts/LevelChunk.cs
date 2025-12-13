@@ -6,18 +6,17 @@ public class LevelChunk : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool showDebug;
 
-    // Referencias
     private Vector2Int chunkCoordinate;
     private EnemyPoolManager enemyPoolManager;
     private ObstaclePoolManager obstaclePoolManager;
+    private DecorationPoolManager decorationPoolManager;
     private Transform playerTransform;
 
-    // Estado interno
     private List<EnemyBase> spawnedEnemies = new List<EnemyBase>();
     private List<GameObject> spawnedObstacles = new List<GameObject>();
+    private List<GameObject> spawnedDecorations = new List<GameObject>();
     private List<GameObject> terrainInstances = new List<GameObject>();
 
-    // Componentes originales del prefab (se ocultan al usar terrenos procedurales)
     private MeshRenderer originalMeshRenderer;
     private MeshCollider originalMeshCollider;
 
@@ -29,11 +28,13 @@ public class LevelChunk : MonoBehaviour
         originalMeshCollider = GetComponent<MeshCollider>();
     }
 
-    public void Setup(Vector2Int coordinate, EnemyPoolManager enemyPool, ObstaclePoolManager obstaclePool, Transform player)
+    public void Setup(Vector2Int coordinate, EnemyPoolManager enemyPool, ObstaclePoolManager obstaclePool,
+                      DecorationPoolManager decorationPool, Transform player)
     {
         chunkCoordinate = coordinate;
         enemyPoolManager = enemyPool;
         obstaclePoolManager = obstaclePool;
+        decorationPoolManager = decorationPool;
         playerTransform = player;
 
         if (showDebug)
@@ -43,9 +44,10 @@ public class LevelChunk : MonoBehaviour
     }
 
     public void SetupWithTerrain(Vector2Int coordinate, EnemyPoolManager enemyPool, ObstaclePoolManager obstaclePool,
-                                 Transform player, TerrainConfigSO terrainConfig, float chunkSize)
+                                 DecorationPoolManager decorationPool, Transform player,
+                                 TerrainConfigSO terrainConfig, float chunkSize)
     {
-        Setup(coordinate, enemyPool, obstaclePool, player);
+        Setup(coordinate, enemyPool, obstaclePool, decorationPool, player);
         GenerateTerrainVariants(terrainConfig, chunkSize);
     }
 
@@ -66,32 +68,8 @@ public class LevelChunk : MonoBehaviour
         }
         else
         {
-            CreateSubdividedTerrain(terrainConfig, chunkSize);
+            CreateMultipleTerrainVariants(terrainConfig, chunkSize);
         }
-    }
-
-    private void HideOriginalMesh()
-    {
-        if (originalMeshRenderer != null) originalMeshRenderer.enabled = false;
-        if (originalMeshCollider != null) originalMeshCollider.enabled = false;
-    }
-
-    private void ShowOriginalMesh()
-    {
-        if (originalMeshRenderer != null) originalMeshRenderer.enabled = true;
-        if (originalMeshCollider != null) originalMeshCollider.enabled = true;
-    }
-
-    private void ClearPreviousTerrainInstances()
-    {
-        foreach (var instance in terrainInstances)
-        {
-            if (instance != null)
-            {
-                Destroy(instance);
-            }
-        }
-        terrainInstances.Clear();
     }
 
     private void CreateSingleTerrainVariant(TerrainConfigSO terrainConfig, float chunkSize)
@@ -99,38 +77,32 @@ public class LevelChunk : MonoBehaviour
         GameObject terrainPrefab = terrainConfig.GetRandomTerrainPrefab();
         if (terrainPrefab == null) return;
 
-        GameObject terrainInstance = Instantiate(terrainPrefab, transform);
-        terrainInstance.transform.localPosition = Vector3.zero;
-
+        GameObject terrainInstance = Instantiate(terrainPrefab, transform.position, Quaternion.identity, transform);
         ScaleTerrainToChunkSize(terrainInstance, chunkSize);
-
         terrainInstances.Add(terrainInstance);
     }
 
-    private void CreateSubdividedTerrain(TerrainConfigSO terrainConfig, float chunkSize)
+    private void CreateMultipleTerrainVariants(TerrainConfigSO terrainConfig, float chunkSize)
     {
-        int subdivisions = terrainConfig.subdivisionsPerChunk;
-        float subChunkSize = chunkSize / subdivisions;
+        int columns = terrainConfig.subdivisionsPerChunk;
+        float subChunkSize = chunkSize / columns;
+        float startOffset = -(chunkSize / 2f) + (subChunkSize / 2f);
 
-        for (int x = 0; x < subdivisions; x++)
+        for (int x = 0; x < columns; x++)
         {
-            for (int z = 0; z < subdivisions; z++)
+            for (int z = 0; z < columns; z++)
             {
+                Vector3 position = transform.position + new Vector3(
+                    startOffset + (x * subChunkSize),
+                    0,
+                    startOffset + (z * subChunkSize)
+                );
+
                 GameObject terrainPrefab = terrainConfig.GetRandomTerrainPrefab();
                 if (terrainPrefab == null) continue;
 
-                GameObject terrainInstance = Instantiate(terrainPrefab, transform);
-
-                Vector3 localPosition = new Vector3(
-                    (x - subdivisions / 2f + 0.5f) * subChunkSize,
-                    0f,
-                    (z - subdivisions / 2f + 0.5f) * subChunkSize
-                );
-
-                terrainInstance.transform.localPosition = localPosition;
-
+                GameObject terrainInstance = Instantiate(terrainPrefab, position, Quaternion.identity, transform);
                 ScaleTerrainToChunkSize(terrainInstance, subChunkSize);
-
                 terrainInstances.Add(terrainInstance);
             }
         }
@@ -153,6 +125,30 @@ public class LevelChunk : MonoBehaviour
         float scaleFactorZ = targetSize / meshSizeZ;
 
         terrainInstance.transform.localScale = new Vector3(scaleFactorX, 1f, scaleFactorZ);
+    }
+
+    private void HideOriginalMesh()
+    {
+        if (originalMeshRenderer != null) originalMeshRenderer.enabled = false;
+        if (originalMeshCollider != null) originalMeshCollider.enabled = false;
+    }
+
+    private void ShowOriginalMesh()
+    {
+        if (originalMeshRenderer != null) originalMeshRenderer.enabled = true;
+        if (originalMeshCollider != null) originalMeshCollider.enabled = true;
+    }
+
+    private void ClearPreviousTerrainInstances()
+    {
+        foreach (var terrain in terrainInstances)
+        {
+            if (terrain != null)
+            {
+                Destroy(terrain);
+            }
+        }
+        terrainInstances.Clear();
     }
 
     public void PopulateEnemies(float chunkSize, int count)
@@ -184,7 +180,7 @@ public class LevelChunk : MonoBehaviour
 
         List<Vector3> spawnedPositions = new List<Vector3>();
         int attempts = 0;
-        int maxAttempts = count * 10;
+        int maxAttempts = count * 20;
 
         while (spawnedObstacles.Count < count && attempts < maxAttempts)
         {
@@ -206,6 +202,37 @@ public class LevelChunk : MonoBehaviour
         if (showDebug)
         {
             Debug.Log($"Chunk {chunkCoordinate}: Spawned {spawnedObstacles.Count}/{count} obstacles in {attempts} attempts");
+        }
+    }
+
+    public void PopulateDecorations(float chunkSize, int count, float minDistance, List<Vector3> obstaclesToAvoid)
+    {
+        if (decorationPoolManager == null || count <= 0) return;
+
+        List<Vector3> allExistingPositions = new List<Vector3>(obstaclesToAvoid);
+        int attempts = 0;
+        int maxAttempts = count * 15;
+
+        while (spawnedDecorations.Count < count && attempts < maxAttempts)
+        {
+            attempts++;
+            Vector3 randomPos = GetRandomPositionInChunk(chunkSize);
+
+            if (IsPositionValid(randomPos, allExistingPositions, minDistance))
+            {
+                Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+                GameObject decoration = decorationPoolManager.GetRandomDecoration(randomPos, randomRotation);
+                if (decoration != null)
+                {
+                    spawnedDecorations.Add(decoration);
+                    allExistingPositions.Add(randomPos);
+                }
+            }
+        }
+
+        if (showDebug)
+        {
+            Debug.Log($"Chunk {chunkCoordinate}: Spawned {spawnedDecorations.Count}/{count} decorations in {attempts} attempts");
         }
     }
 
@@ -257,6 +284,15 @@ public class LevelChunk : MonoBehaviour
         }
         spawnedObstacles.Clear();
 
+        foreach (var decoration in spawnedDecorations)
+        {
+            if (decoration != null && decorationPoolManager != null)
+            {
+                decorationPoolManager.ReturnDecoration(decoration);
+            }
+        }
+        spawnedDecorations.Clear();
+
         ClearPreviousTerrainInstances();
         ShowOriginalMesh();
 
@@ -272,6 +308,24 @@ public class LevelChunk : MonoBehaviour
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireCube(transform.position, Vector3.one * 50f);
+
+            Gizmos.color = Color.red;
+            foreach (var obstaclePos in spawnedObstacles)
+            {
+                if (obstaclePos != null)
+                {
+                    Gizmos.DrawWireSphere(obstaclePos.transform.position, 0.5f);
+                }
+            }
+
+            Gizmos.color = Color.green;
+            foreach (var decorationPos in spawnedDecorations)
+            {
+                if (decorationPos != null)
+                {
+                    Gizmos.DrawWireSphere(decorationPos.transform.position, 0.3f);
+                }
+            }
         }
     }
 }

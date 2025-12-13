@@ -44,9 +44,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2775b482c6dee98488ae85e7336d8b5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chunkPrefab: {fileID: 4096019846998364744, guid: 409f125a14891a84bb264fef6b1416fd, type: 3}
+  chunkPrefab: {fileID: 0}
   playerTransform: {fileID: 0}
   enemyPoolManager: {fileID: 0}
+  obstaclePoolManager: {fileID: 0}
+  decorationPoolManager: {fileID: 0}
   chunkSize: 10
   viewDistance: 5
   terrainConfig: {fileID: 11400000, guid: 9949c05105962e84d835304d8217ccf4, type: 2}
@@ -54,7 +56,10 @@ MonoBehaviour:
   spawnEnemiesOnGeneration: 0
   enemiesPerChunk: 1
   startSpawnDelay: 5
-  obstaclePoolManager: {fileID: 0}
   spawnObstaclesOnGeneration: 1
-  obstaclesPerChunk: 15
-  minDistanceBetweenObstacles: 2
+  obstaclesPerChunk: 1
+  minDistanceBetweenObstacles: 5
+  spawnDecorationsOnGeneration: 1
+  decorationsPerChunk: 20
+  minDistanceBetweenDecorations: 1
+  showDebug: 0

@@ -119,6 +119,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &301270403 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3113521632567161993, guid: 409f125a14891a84bb264fef6b1416fd, type: 3}
+  m_PrefabInstance: {fileID: 1204182118}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -248,14 +253,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1205719795157363427, guid: 401d8ced48cc4a24aa5de13f5cb1c060, type: 3}
-      propertyPath: playerTransform
-      value: 
-      objectReference: {fileID: 2067522527}
-    - target: {fileID: 1205719795157363427, guid: 401d8ced48cc4a24aa5de13f5cb1c060, type: 3}
-      propertyPath: enemyPoolManager
-      value: 
-      objectReference: {fileID: 1173080089}
     - target: {fileID: 1656134978658687884, guid: 401d8ced48cc4a24aa5de13f5cb1c060, type: 3}
       propertyPath: m_Name
       value: SwarmManager
@@ -389,6 +386,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8923968049143583848, guid: bd57d806fd60e434a9bd254152633741, type: 3}
   m_PrefabInstance: {fileID: 2538627013748177574}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1812478795 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 768827823310292592, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+  m_PrefabInstance: {fileID: 1915768255624161424}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37fd2fbaef3807143b2db2c113fca5f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &2067522527 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6660822945240645772, guid: bd57d806fd60e434a9bd254152633741, type: 3}
@@ -441,6 +449,10 @@ PrefabInstance:
     - target: {fileID: 30312639712420883, guid: 33254b2b378413f40aa21b132bfbac25, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2886584014438016019, guid: 33254b2b378413f40aa21b132bfbac25, type: 3}
+      propertyPath: field of view
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 4976728100679929362, guid: 33254b2b378413f40aa21b132bfbac25, type: 3}
       propertyPath: m_Name
@@ -508,6 +520,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
+      propertyPath: chunkPrefab
+      value: 
+      objectReference: {fileID: 301270403}
+    - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: playerTransform
       value: 
       objectReference: {fileID: 2067522527}
@@ -519,6 +535,10 @@ PrefabInstance:
       propertyPath: obstaclePoolManager
       value: 
       objectReference: {fileID: 574932851}
+    - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
+      propertyPath: decorationPoolManager
+      value: 
+      objectReference: {fileID: 1812478795}
     - target: {fileID: 8692277167890053769, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: m_Name
       value: WorldGenerator
@@ -528,6 +548,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
+--- !u!1001 &1915768255624161424
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4640934304837857181, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7275275787739240406, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
+      propertyPath: m_Name
+      value: DecorationPoolManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 111fea4134a56d94b977e76911a703f8, type: 3}
 --- !u!1001 &2538627013748177574
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -596,14 +673,6 @@ PrefabInstance:
     - target: {fileID: 627225328020909887, guid: 6e29264829b65cf4cbd15975cbbdf45f, type: 3}
       propertyPath: m_Name
       value: ObstaclePoolManager
-      objectReference: {fileID: 0}
-    - target: {fileID: 1289142745799051499, guid: 6e29264829b65cf4cbd15975cbbdf45f, type: 3}
-      propertyPath: maxPoolSizePerType
-      value: 500
-      objectReference: {fileID: 0}
-    - target: {fileID: 1289142745799051499, guid: 6e29264829b65cf4cbd15975cbbdf45f, type: 3}
-      propertyPath: initialPoolSizePerType
-      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 5245989383368949180, guid: 6e29264829b65cf4cbd15975cbbdf45f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -691,3 +760,4 @@ SceneRoots:
   - {fileID: 560717835}
   - {fileID: 6793690349393199329}
   - {fileID: 1204182118}
+  - {fileID: 1915768255624161424}

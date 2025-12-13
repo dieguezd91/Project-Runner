@@ -1,213 +1,238 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Pool;
+using System.Collections.Generic;
 
 public class WorldGenerator : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private LevelChunk chunkPrefab;
+    [SerializeField] private GameObject chunkPrefab;
     [SerializeField] private Transform playerTransform;
     [SerializeField] private EnemyPoolManager enemyPoolManager;
+    [SerializeField] private ObstaclePoolManager obstaclePoolManager;
+    [SerializeField] private DecorationPoolManager decorationPoolManager;
 
-    [Header("Settings")]
-    [SerializeField] private int chunkSize = 50;
-    [SerializeField] private int viewDistance = 2;
+    [Header("World Settings")]
+    [SerializeField] private float chunkSize = 50f;
+    [SerializeField] private int viewDistance = 3;
 
-    [Header("Terrain Variety")]
+    [Header("Terrain")]
     [SerializeField] private TerrainConfigSO terrainConfig;
-    [Tooltip("Si es true, usa terrenos procedurales. Si es false, usa el chunk prefab básico.")]
     [SerializeField] private bool useProceduralTerrain = true;
 
-    [Header("Procedural Spawning")]
-    [SerializeField] private bool spawnEnemiesOnGeneration = true;
-    [SerializeField] private int enemiesPerChunk = 2;
-    [Tooltip("Tiempo en segundos antes de que empiecen a aparecer enemigos")]
+    [Header("Enemy Spawning")]
+    [SerializeField] private bool spawnEnemiesOnGeneration = false;
+    [SerializeField][Range(0, 10)] private int enemiesPerChunk = 3;
     [SerializeField] private float startSpawnDelay = 5f;
 
-    [Header("Obstacles")]
-    [SerializeField] private ObstaclePoolManager obstaclePoolManager;
+    [Header("Obstacle Spawning (CON COLISIÓN - Gameplay)")]
     [SerializeField] private bool spawnObstaclesOnGeneration = true;
-    [SerializeField] private int obstaclesPerChunk = 5;
-    [SerializeField] private float minDistanceBetweenObstacles = 4f;
+    [SerializeField][Range(0, 5)] private int obstaclesPerChunk = 1;
+    [SerializeField][Range(3f, 15f)] private float minDistanceBetweenObstacles = 5f;
 
-    // State
-    private Vector2Int _currentChunkCoord;
-    private Dictionary<Vector2Int, LevelChunk> _activeChunks = new Dictionary<Vector2Int, LevelChunk>();
-    private ObjectPool<LevelChunk> _chunkPool;
+    [Header("Decoration Spawning (SIN COLISIÓN - Visual)")]
+    [SerializeField] private bool spawnDecorationsOnGeneration = true;
+    [SerializeField][Range(5, 50)] private int decorationsPerChunk = 20;
+    [SerializeField][Range(1f, 5f)] private float minDistanceBetweenDecorations = 2f;
 
-    private float currentSpawnTimer;
-    private bool isSpawningEnabled = false;
+    [Header("Debug")]
+    [SerializeField] private bool showDebug = false;
 
-    public float TimeUntilSpawn => Mathf.Max(0f, currentSpawnTimer);
-    public bool IsSpawningEnabled => isSpawningEnabled;
-
-    private void Awake()
-    {
-        ValidateTerrainConfig();
-        InitializePool();
-    }
+    private Dictionary<Vector2Int, LevelChunk> activeChunks = new Dictionary<Vector2Int, LevelChunk>();
+    private Vector2Int currentPlayerChunk;
+    private bool hasStarted = false;
 
     private void Start()
     {
-        currentSpawnTimer = startSpawnDelay;
-        if (currentSpawnTimer <= 0) isSpawningEnabled = true;
+        if (playerTransform == null)
+        {
+            Debug.LogError("Player Transform not assigned!");
+            return;
+        }
 
-        UpdateVisibleChunks(true);
+        currentPlayerChunk = GetChunkCoordinate(playerTransform.position);
+        GenerateInitialChunks();
+
+        if (spawnEnemiesOnGeneration)
+        {
+            Invoke(nameof(EnableEnemySpawning), startSpawnDelay);
+        }
+
+        hasStarted = true;
     }
 
     private void Update()
     {
-        HandleSpawnTimer();
-        HandleChunkGeneration();
-    }
+        if (!hasStarted || playerTransform == null) return;
 
-    private void ValidateTerrainConfig()
-    {
-        if (useProceduralTerrain && terrainConfig == null)
+        Vector2Int playerChunk = GetChunkCoordinate(playerTransform.position);
+
+        if (playerChunk != currentPlayerChunk)
         {
-            Debug.LogWarning("Procedural terrain enabled but no TerrainConfig assigned! Falling back to basic chunks.");
-            useProceduralTerrain = false;
+            currentPlayerChunk = playerChunk;
+            UpdateChunks();
         }
     }
 
-    private void HandleSpawnTimer()
+    private void GenerateInitialChunks()
     {
-        if (isSpawningEnabled) return;
-
-        currentSpawnTimer -= Time.deltaTime;
-
-        if (currentSpawnTimer <= 0)
-        {
-            currentSpawnTimer = 0;
-            isSpawningEnabled = true;
-            PopulateExistingChunks();
-        }
-    }
-
-    private void HandleChunkGeneration()
-    {
-        int x = Mathf.RoundToInt(playerTransform.position.x / chunkSize);
-        int z = Mathf.RoundToInt(playerTransform.position.z / chunkSize);
-        Vector2Int playerChunkCoord = new Vector2Int(x, z);
-
-        if (playerChunkCoord != _currentChunkCoord)
-        {
-            _currentChunkCoord = playerChunkCoord;
-            UpdateVisibleChunks();
-        }
-    }
-
-    private void InitializePool()
-    {
-        _chunkPool = new ObjectPool<LevelChunk>(
-            createFunc: () => Instantiate(chunkPrefab, transform),
-            actionOnGet: (chunk) => chunk.gameObject.SetActive(true),
-            actionOnRelease: (chunk) => {
-                chunk.Recycle();
-                chunk.gameObject.SetActive(false);
-            },
-            actionOnDestroy: (chunk) => Destroy(chunk.gameObject),
-            defaultCapacity: 25,
-            maxSize: 50
-        );
-    }
-
-    private void UpdateVisibleChunks(bool forceUpdate = false)
-    {
-        HashSet<Vector2Int> coordsToKeep = new HashSet<Vector2Int>();
         for (int x = -viewDistance; x <= viewDistance; x++)
         {
-            for (int y = -viewDistance; y <= viewDistance; y++)
+            for (int z = -viewDistance; z <= viewDistance; z++)
             {
-                coordsToKeep.Add(_currentChunkCoord + new Vector2Int(x, y));
+                Vector2Int coordinate = currentPlayerChunk + new Vector2Int(x, z);
+                SpawnChunk(coordinate);
             }
         }
 
-        List<Vector2Int> coordsToRemove = new List<Vector2Int>();
-        foreach (var kvp in _activeChunks)
+        if (showDebug)
         {
-            if (!coordsToKeep.Contains(kvp.Key))
-                coordsToRemove.Add(kvp.Key);
-        }
-
-        foreach (var coord in coordsToRemove)
-        {
-            LevelChunk chunkToRemove = _activeChunks[coord];
-            _chunkPool.Release(chunkToRemove);
-            _activeChunks.Remove(coord);
-        }
-
-        foreach (var coord in coordsToKeep)
-        {
-            if (!_activeChunks.ContainsKey(coord))
-                SpawnChunk(coord);
+            Debug.Log($"Generated {activeChunks.Count} initial chunks around player");
         }
     }
 
-    private void SpawnChunk(Vector2Int coord)
+    private void UpdateChunks()
     {
-        LevelChunk newChunk = _chunkPool.Get();
+        HashSet<Vector2Int> chunksToKeep = new HashSet<Vector2Int>();
 
-        Vector3 position = new Vector3(coord.x * chunkSize, 0, coord.y * chunkSize);
-        newChunk.transform.position = position;
+        for (int x = -viewDistance; x <= viewDistance; x++)
+        {
+            for (int z = -viewDistance; z <= viewDistance; z++)
+            {
+                Vector2Int coordinate = currentPlayerChunk + new Vector2Int(x, z);
+                chunksToKeep.Add(coordinate);
+
+                if (!activeChunks.ContainsKey(coordinate))
+                {
+                    SpawnChunk(coordinate);
+                }
+            }
+        }
+
+        List<Vector2Int> chunksToRemove = new List<Vector2Int>();
+        foreach (var kvp in activeChunks)
+        {
+            if (!chunksToKeep.Contains(kvp.Key))
+            {
+                chunksToRemove.Add(kvp.Key);
+            }
+        }
+
+        foreach (var coordinate in chunksToRemove)
+        {
+            RecycleChunk(coordinate);
+        }
+
+        if (showDebug && chunksToRemove.Count > 0)
+        {
+            Debug.Log($"Updated chunks: spawned new, recycled {chunksToRemove.Count}");
+        }
+    }
+
+    private void SpawnChunk(Vector2Int coordinate)
+    {
+        Vector3 worldPosition = new Vector3(
+            coordinate.x * chunkSize,
+            -1f,
+            coordinate.y * chunkSize
+        );
+
+        GameObject chunkObj = Instantiate(chunkPrefab, worldPosition, Quaternion.identity, transform);
+        LevelChunk chunk = chunkObj.GetComponent<LevelChunk>();
+
+        if (chunk == null)
+        {
+            Debug.LogError("Chunk prefab missing LevelChunk component!");
+            Destroy(chunkObj);
+            return;
+        }
 
         if (useProceduralTerrain && terrainConfig != null)
         {
-            newChunk.SetupWithTerrain(coord, enemyPoolManager, obstaclePoolManager, playerTransform, terrainConfig, chunkSize);
+            chunk.SetupWithTerrain(coordinate, enemyPoolManager, obstaclePoolManager,
+                                   decorationPoolManager, playerTransform, terrainConfig, chunkSize);
         }
         else
         {
-            newChunk.Setup(coord, enemyPoolManager, obstaclePoolManager, playerTransform);
+            chunk.Setup(coordinate, enemyPoolManager, obstaclePoolManager,
+                       decorationPoolManager, playerTransform);
         }
 
-        if (spawnObstaclesOnGeneration && obstaclePoolManager != null)
-        {
-            newChunk.PopulateObstacles(chunkSize, obstaclesPerChunk, minDistanceBetweenObstacles);
-        }
-
-        if (isSpawningEnabled)
-        {
-            TrySpawnEnemiesInChunk(newChunk, coord);
-        }
-
-        _activeChunks.Add(coord, newChunk);
-    }
-
-    private void PopulateExistingChunks()
-    {
-        Debug.Log("Survival Started! Spawning initial wave...");
-        foreach (var kvp in _activeChunks)
-        {
-            TrySpawnEnemiesInChunk(kvp.Value, kvp.Key);
-        }
-    }
-
-    private void TrySpawnEnemiesInChunk(LevelChunk chunk, Vector2Int coord)
-    {
-        if (!spawnEnemiesOnGeneration || enemiesPerChunk <= 0) return;
-
-        Vector2Int distToPlayer = coord - _currentChunkCoord;
-
-        bool isSafeZone = Mathf.Abs(distToPlayer.x) <= 1 && Mathf.Abs(distToPlayer.y) <= 1;
-
-        if (!isSafeZone)
+        if (spawnEnemiesOnGeneration && enemyPoolManager != null)
         {
             chunk.PopulateEnemies(chunkSize, enemiesPerChunk);
         }
+
+        List<Vector3> obstaclePositions = new List<Vector3>();
+
+        if (spawnObstaclesOnGeneration && obstaclePoolManager != null)
+        {
+            chunk.PopulateObstacles(chunkSize, obstaclesPerChunk, minDistanceBetweenObstacles);
+
+            foreach (Transform child in chunk.transform)
+            {
+                if (child.gameObject.layer == 7)
+                {
+                    obstaclePositions.Add(child.position);
+                }
+            }
+        }
+
+        if (spawnDecorationsOnGeneration && decorationPoolManager != null)
+        {
+            chunk.PopulateDecorations(chunkSize, decorationsPerChunk,
+                                      minDistanceBetweenDecorations, obstaclePositions);
+        }
+
+        activeChunks[coordinate] = chunk;
     }
 
-    private void OnGUI()
+    private void RecycleChunk(Vector2Int coordinate)
     {
-        if (currentSpawnTimer > 0)
-        {
-            GUIStyle style = new GUIStyle(GUI.skin.label);
-            style.fontSize = 24;
-            style.fontStyle = FontStyle.Bold;
-            style.normal.textColor = Color.red;
-            style.alignment = TextAnchor.MiddleCenter;
+        if (!activeChunks.ContainsKey(coordinate)) return;
 
-            GUI.Label(new Rect(Screen.width / 2 - 100, 50, 200, 50),
-                $"SURVIVAL IN: {currentSpawnTimer:F1}", style);
+        LevelChunk chunk = activeChunks[coordinate];
+        chunk.Recycle();
+        Destroy(chunk.gameObject);
+        activeChunks.Remove(coordinate);
+    }
+
+    private Vector2Int GetChunkCoordinate(Vector3 worldPosition)
+    {
+        int x = Mathf.FloorToInt(worldPosition.x / chunkSize);
+        int z = Mathf.FloorToInt(worldPosition.z / chunkSize);
+        return new Vector2Int(x, z);
+    }
+
+    private void EnableEnemySpawning()
+    {
+        spawnEnemiesOnGeneration = true;
+
+        if (showDebug)
+        {
+            Debug.Log("Enemy spawning enabled after delay");
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (!showDebug || !Application.isPlaying) return;
+
+        Gizmos.color = Color.yellow;
+        Vector3 playerChunkCenter = new Vector3(
+            currentPlayerChunk.x * chunkSize,
+            0,
+            currentPlayerChunk.y * chunkSize
+        );
+        Gizmos.DrawWireCube(playerChunkCenter, new Vector3(chunkSize, 2f, chunkSize));
+
+        Gizmos.color = Color.cyan;
+        foreach (var kvp in activeChunks)
+        {
+            Vector3 center = new Vector3(
+                kvp.Key.x * chunkSize,
+                0,
+                kvp.Key.y * chunkSize
+            );
+            Gizmos.DrawWireCube(center, new Vector3(chunkSize, 1f, chunkSize));
         }
     }
 }
