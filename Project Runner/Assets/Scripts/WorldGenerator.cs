@@ -18,12 +18,16 @@ public class WorldGenerator : MonoBehaviour
     [SerializeField] private TerrainConfigSO terrainConfig;
     [SerializeField] private bool useProceduralTerrain = true;
 
-    [Header("Enemy Spawning")]
+    [Header("Difficulty System")]
+    [Tooltip("Usar sistema de dificultad progresiva (recomendado)")]
+    [SerializeField] private bool useDifficultyProgression = true;
+    [Tooltip("Referencia al DifficultyManager (dejar en null para buscar automáticamente)")]
+    [SerializeField] private DifficultyManager difficultyManager;
+
+    [Header("Manual Spawning (Solo si useDifficultyProgression = false)")]
     [SerializeField] private bool spawnEnemiesOnGeneration = false;
     [SerializeField][Range(0, 10)] private int enemiesPerChunk = 3;
     [SerializeField] private float startSpawnDelay = 5f;
-
-    [Header("Obstacle Spawning (CON COLISIÓN - Gameplay)")]
     [SerializeField] private bool spawnObstaclesOnGeneration = true;
     [SerializeField][Range(0, 5)] private int obstaclesPerChunk = 1;
     [SerializeField][Range(3f, 15f)] private float minDistanceBetweenObstacles = 5f;
@@ -48,10 +52,20 @@ public class WorldGenerator : MonoBehaviour
             return;
         }
 
+        if (useDifficultyProgression && difficultyManager == null)
+        {
+            difficultyManager = FindObjectOfType<DifficultyManager>();
+            if (difficultyManager == null)
+            {
+                Debug.LogWarning("DifficultyManager not found! Falling back to manual spawning.");
+                useDifficultyProgression = false;
+            }
+        }
+
         currentPlayerChunk = GetChunkCoordinate(playerTransform.position);
         GenerateInitialChunks();
 
-        if (spawnEnemiesOnGeneration)
+        if (!useDifficultyProgression && spawnEnemiesOnGeneration)
         {
             Invoke(nameof(EnableEnemySpawning), startSpawnDelay);
         }
@@ -156,16 +170,36 @@ public class WorldGenerator : MonoBehaviour
                        decorationPoolManager, playerTransform);
         }
 
-        if (spawnEnemiesOnGeneration && enemyPoolManager != null)
+        bool shouldSpawnEnemies = false;
+        int enemyCount = 0;
+        bool shouldSpawnObstacles = false;
+        int obstacleCount = 0;
+
+        if (useDifficultyProgression && difficultyManager != null)
         {
-            chunk.PopulateEnemies(chunkSize, enemiesPerChunk);
+            shouldSpawnEnemies = difficultyManager.ShouldSpawnEnemies();
+            enemyCount = difficultyManager.GetEnemyCount();
+            shouldSpawnObstacles = difficultyManager.ShouldSpawnObstacles();
+            obstacleCount = difficultyManager.GetObstacleCount();
+        }
+        else
+        {
+            shouldSpawnEnemies = spawnEnemiesOnGeneration;
+            enemyCount = enemiesPerChunk;
+            shouldSpawnObstacles = spawnObstaclesOnGeneration;
+            obstacleCount = obstaclesPerChunk;
+        }
+
+        if (shouldSpawnEnemies && enemyPoolManager != null)
+        {
+            chunk.PopulateEnemies(chunkSize, enemyCount);
         }
 
         List<Vector3> obstaclePositions = new List<Vector3>();
 
-        if (spawnObstaclesOnGeneration && obstaclePoolManager != null)
+        if (shouldSpawnObstacles && obstaclePoolManager != null)
         {
-            chunk.PopulateObstacles(chunkSize, obstaclesPerChunk, minDistanceBetweenObstacles);
+            chunk.PopulateObstacles(chunkSize, obstacleCount, minDistanceBetweenObstacles);
 
             foreach (Transform child in chunk.transform)
             {
@@ -183,6 +217,15 @@ public class WorldGenerator : MonoBehaviour
         }
 
         activeChunks[coordinate] = chunk;
+
+        if (showDebug)
+        {
+            string spawnInfo = useDifficultyProgression
+                ? $"Difficulty Mode - Obstacles: {(shouldSpawnObstacles ? obstacleCount.ToString() : "0")}, Enemies: {(shouldSpawnEnemies ? enemyCount.ToString() : "0")}"
+                : $"Manual Mode - Obstacles: {(shouldSpawnObstacles ? obstacleCount.ToString() : "0")}, Enemies: {(shouldSpawnEnemies ? enemyCount.ToString() : "0")}";
+
+            Debug.Log($"Spawned chunk {coordinate}: {spawnInfo}");
+        }
     }
 
     private void RecycleChunk(Vector2Int coordinate)

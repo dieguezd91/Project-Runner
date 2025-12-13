@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: a4be220830e90ea4eb88b48b7fd376ce, type: 2}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 7e5da89d99c2ac04dae8ccc7ed7e041d, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -313,6 +313,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 455328168c4c5044da57937965a01cb7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1107986605 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 514909862867686336, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+  m_PrefabInstance: {fileID: 723205160790386072}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e43ed01af1f39a04d879c6cb6bb40096, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1173080089 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3266370689332283712, guid: 42b498abd3a3c1b4bb6086ce9db0c23e, type: 3}
@@ -471,6 +482,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 33254b2b378413f40aa21b132bfbac25, type: 3}
+--- !u!1001 &723205160790386072
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896934557245513002, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4989959887718400901, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
+      propertyPath: m_Name
+      value: DifficultyManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 598f28bc7b3b9d146a993cf562449d1a, type: 3}
 --- !u!1001 &1221764740818350744
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -531,6 +599,10 @@ PrefabInstance:
       propertyPath: enemyPoolManager
       value: 
       objectReference: {fileID: 1173080089}
+    - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
+      propertyPath: difficultyManager
+      value: 
+      objectReference: {fileID: 1107986605}
     - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: obstaclePoolManager
       value: 
@@ -761,3 +833,4 @@ SceneRoots:
   - {fileID: 6793690349393199329}
   - {fileID: 1204182118}
   - {fileID: 1915768255624161424}
+  - {fileID: 723205160790386072}
