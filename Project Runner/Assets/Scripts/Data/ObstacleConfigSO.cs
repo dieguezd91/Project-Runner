@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "ObstacleData", menuName = "Game/Obstacle Data")]
-public class ObstacleData : ScriptableObject
+public class ObstacleConfigSO : ScriptableObject
 {
     [Header("Prefab")]
     [Tooltip("Prefab del obstáculo de Polygon")]

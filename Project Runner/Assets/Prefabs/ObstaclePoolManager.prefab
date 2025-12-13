@@ -45,10 +45,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   obstacleDatabase:
-  - {fileID: 11400000, guid: 43ca03b9c49ad7145b3b01e53b53a39e, type: 2}
-  - {fileID: 11400000, guid: df87acf99469cc247a3c46b555551043, type: 2}
-  - {fileID: 11400000, guid: 98b67f7960422fd43a59aae8f6368ed2, type: 2}
-  - {fileID: 11400000, guid: 5317c0f2123170b488bb3561bc5d7c51, type: 2}
+  - {fileID: 11400000, guid: 0e8c36f9f26bbae459241b3782e42f7c, type: 2}
+  - {fileID: 11400000, guid: 9df04ef97de00f8428159d287a98de24, type: 2}
+  - {fileID: 11400000, guid: a3bde8f919d4b7d45b0d472ea76465d7, type: 2}
+  - {fileID: 11400000, guid: 90228bee846214f49bc9e94c09f3cba5, type: 2}
   initialPoolSizePerType: 10
   maxPoolSizePerType: 100
   showDebug: 0

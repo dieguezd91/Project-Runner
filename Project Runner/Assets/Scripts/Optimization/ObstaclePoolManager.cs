@@ -6,7 +6,7 @@ public class ObstaclePoolManager : MonoBehaviour
 {
     [Header("Configuration")]
     [Tooltip("Lista de tipos de obstáculos disponibles")]
-    [SerializeField] private ObstacleData[] obstacleDatabase;
+    [SerializeField] private ObstacleConfigSO[] obstacleDatabase;
 
     [Header("Pool Settings")]
     [SerializeField] private int initialPoolSizePerType = 10;
@@ -16,8 +16,8 @@ public class ObstaclePoolManager : MonoBehaviour
     [SerializeField] private bool showDebug = false;
 
     // Pools por cada tipo de obstáculo
-    private Dictionary<ObstacleData, ObjectPool<GameObject>> obstaclePools =
-        new Dictionary<ObstacleData, ObjectPool<GameObject>>();
+    private Dictionary<ObstacleConfigSO, ObjectPool<GameObject>> obstaclePools =
+        new Dictionary<ObstacleConfigSO, ObjectPool<GameObject>>();
 
     private int activeObstaclesCount = 0;
 
@@ -68,7 +68,7 @@ public class ObstaclePoolManager : MonoBehaviour
         }
     }
 
-    private GameObject CreateObstacle(ObstacleData data)
+    private GameObject CreateObstacle(ObstacleConfigSO data)
     {
         GameObject obstacle = Instantiate(data.prefab, transform);
         obstacle.SetActive(false);
@@ -105,7 +105,7 @@ public class ObstaclePoolManager : MonoBehaviour
     /// </summary>
     public GameObject GetRandomObstacle(Vector3 position, Quaternion rotation)
     {
-        ObstacleData selected = SelectWeightedRandom();
+        ObstacleConfigSO selected = SelectWeightedRandom();
         if (selected == null) return null;
 
         return GetObstacle(selected, position, rotation);
@@ -114,7 +114,7 @@ public class ObstaclePoolManager : MonoBehaviour
     /// <summary>
     /// Obtiene un obstáculo específico del pool
     /// </summary>
-    public GameObject GetObstacle(ObstacleData data, Vector3 position, Quaternion rotation)
+    public GameObject GetObstacle(ObstacleConfigSO data, Vector3 position, Quaternion rotation)
     {
         if (!obstaclePools.ContainsKey(data))
         {
@@ -172,7 +172,7 @@ public class ObstaclePoolManager : MonoBehaviour
     /// <summary>
     /// Selección aleatoria ponderada por peso
     /// </summary>
-    private ObstacleData SelectWeightedRandom()
+    private ObstacleConfigSO SelectWeightedRandom()
     {
         if (obstacleDatabase.Length == 0) return null;
 
@@ -235,5 +235,5 @@ public class ObstaclePoolManager : MonoBehaviour
 public class PooledObstacle : MonoBehaviour
 {
     [HideInInspector]
-    public ObstacleData obstacleData;
+    public ObstacleConfigSO obstacleData;
 }
