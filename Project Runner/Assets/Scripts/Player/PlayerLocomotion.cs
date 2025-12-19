@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerLocomotion : MonoBehaviour
 {
@@ -33,6 +34,8 @@ public class PlayerLocomotion : MonoBehaviour
     private float currentSpeedPercent;
     private float accelerationRate;
 
+    [SerializeField] private InputReader inputReader;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -50,6 +53,20 @@ public class PlayerLocomotion : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        // Suscribir eventos de salto
+        inputReader.OnJumpPerformed += HandleJumpPerformed;
+        inputReader.OnJumpCanceled += HandleJumpCanceled;
+    }
+
+    private void OnDisable()
+    {
+        // Desuscribir para evitar errores
+        inputReader.OnJumpPerformed -= HandleJumpPerformed;
+        inputReader.OnJumpCanceled -= HandleJumpCanceled;
+    }
+
     private void Update()
     {
         ReadInput();
@@ -63,21 +80,27 @@ public class PlayerLocomotion : MonoBehaviour
         ApplyGravity();
     }
 
+    //private void ReadInput()
+    //{
+    //    horizontalInput = Input.GetAxisRaw("Horizontal");
+    //    verticalInput = Input.GetAxisRaw("Vertical");
+
+    //    if (Input.GetButtonDown("Jump"))
+    //    {
+    //        jumpRequested = true;
+    //        lastJumpTime = Time.time;
+    //    }
+
+    //    if (Input.GetButtonUp("Jump") && rb.linearVelocity.y > 0)
+    //    {
+    //        jumpCut = true;
+    //    }
+    //}
+
     private void ReadInput()
     {
-        horizontalInput = Input.GetAxisRaw("Horizontal");
-        verticalInput = Input.GetAxisRaw("Vertical");
-
-        if (Input.GetButtonDown("Jump"))
-        {
-            jumpRequested = true;
-            lastJumpTime = Time.time;
-        }
-
-        if (Input.GetButtonUp("Jump") && rb.linearVelocity.y > 0)
-        {
-            jumpCut = true;
-        }
+        horizontalInput = inputReader.MoveInput.x;
+        verticalInput = inputReader.MoveInput.y;
     }
 
     private void CheckGround()
@@ -385,6 +408,21 @@ public class PlayerLocomotion : MonoBehaviour
         result.SetPixels(pix);
         result.Apply();
         return result;
+    }
+
+    private void HandleJumpPerformed()
+    {
+        jumpRequested = true;
+        lastJumpTime = Time.time; // Importante para el Jump Buffer que ya tienes programado
+    }
+
+    private void HandleJumpCanceled()
+    {
+        // Solo activamos el corte de salto si el Rigidbody está ascendiendo
+        if (rb.linearVelocity.y > 0)
+        {
+            jumpCut = true;
+        }
     }
 
     private void OnDrawGizmos()

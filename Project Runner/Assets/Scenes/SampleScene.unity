@@ -470,10 +470,6 @@ PrefabInstance:
       value: CustomCamera
       objectReference: {fileID: 0}
     - target: {fileID: 6052245544427952736, guid: 33254b2b378413f40aa21b132bfbac25, type: 3}
-      propertyPath: config
-      value: 
-      objectReference: {fileID: 11400000, guid: 34185eb7af3a5904a89b3002f55f3cc3, type: 2}
-    - target: {fileID: 6052245544427952736, guid: 33254b2b378413f40aa21b132bfbac25, type: 3}
       propertyPath: followTarget
       value: 
       objectReference: {fileID: 1308717817}

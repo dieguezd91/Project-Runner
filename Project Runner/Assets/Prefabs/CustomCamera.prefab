@@ -150,20 +150,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9d11660a14ce2149819472ede84e6e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: {fileID: 0}
-  targetOffset: {x: 0, y: 1, z: 0}
-  mouseSensitivity: 1.5
-  rotationSmoothTime: 0.3
-  pitchLimits: {x: 0, y: 0}
-  autoAlignDelay: 1.5
-  autoAlignSmoothTime: 0.5
-  movementThreshold: 0.5
+  followTarget: {fileID: 0}
+  config: {fileID: 11400000, guid: 34185eb7af3a5904a89b3002f55f3cc3, type: 2}
+  inputReader: {fileID: 11400000, guid: c8db638a9d8b4af4d93c9273323aace1, type: 2}
+  idleTimeBeforeCenter: 3
+  centerSpeed: 3
   currentDistance: 5
-  zoomLimits: {x: 3.5, y: 8}
-  zoomSpeed: 1.5
-  zoomDamping: 5
-  collisionLayers:
-    serializedVersion: 2
-    m_Bits: 200
-  collisionRadius: 0.2
-  collisionOffset: 0.2
+  pitch: 0
+  yaw: 0
