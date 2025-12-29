@@ -1,30 +1,22 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Maneja el estado global del juego: Muerte, Restart, Tracking de distancia.
+/// Maneja el estado global del juego: Game Over, Restart, Quit.
+/// NO maneja UI ni tracking de stats.
 /// </summary>
 public class GameManager : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private PlayerHealth playerHealth;
-    [SerializeField] private GameObject gameOverPanel;
-
-    [Header("UI Elements")]
-    [SerializeField] private TextMeshProUGUI distanceText;
-    [SerializeField] private TextMeshProUGUI finalDistanceText;
-    [SerializeField] private TextMeshProUGUI timeAliveText;
-    [SerializeField] private TextMeshProUGUI finalTimeAliveText;
+    [SerializeField] private RunStatsTracker statsTracker;
+    [SerializeField] private GameOverUI gameOverUI;
+    [SerializeField] private HUDManager hudManager;
 
     [Header("Debug")]
     [SerializeField] private bool showDebug = true;
 
-    private float distanceTraveled = 0f;
-    private Vector3 lastPosition;
     private bool isGameOver = false;
-    private float startTime;
-    private float timeAlive;
 
     public static GameManager Instance { get; private set; }
 
@@ -41,60 +33,35 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        // Auto-find references si no están asignadas
         if (playerHealth == null)
         {
             playerHealth = FindFirstObjectByType<PlayerHealth>();
         }
 
+        if (statsTracker == null)
+        {
+            statsTracker = FindFirstObjectByType<RunStatsTracker>();
+        }
+
+        if (gameOverUI == null)
+        {
+            gameOverUI = FindFirstObjectByType<GameOverUI>();
+        }
+
+        if (hudManager == null)
+        {
+            hudManager = FindFirstObjectByType<HUDManager>();
+        }
+
+        // Suscribirse a muerte del jugador
         if (playerHealth != null)
         {
             playerHealth.OnPlayerDeath += HandlePlayerDeath;
-            lastPosition = playerHealth.transform.position;
         }
         else
         {
             Debug.LogError("GameManager: PlayerHealth not found!");
-        }
-
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(false);
-        }
-
-        startTime = Time.time;
-    }
-
-    private void Update()
-    {
-        if (isGameOver) return;
-
-        // Actualizar distancia recorrida
-        if (playerHealth != null)
-        {
-            Vector3 currentPos = playerHealth.transform.position;
-            float delta = Vector3.Distance(
-                new Vector3(lastPosition.x, 0, lastPosition.z),
-                new Vector3(currentPos.x, 0, currentPos.z)
-            );
-
-            distanceTraveled += delta;
-            lastPosition = currentPos;
-
-            // Actualizar tiempo vivo
-            timeAlive = Time.time - startTime;
-
-            // Actualizar UI en tiempo real
-            if (distanceText != null)
-            {
-                distanceText.text = $"Distance: {distanceTraveled:F1}m";
-            }
-
-            if (timeAliveText != null)
-            {
-                int minutes = Mathf.FloorToInt(timeAlive / 60f);
-                int seconds = Mathf.FloorToInt(timeAlive % 60f);
-                timeAliveText.text = $"Time: {minutes:00}:{seconds:00}";
-            }
         }
     }
 
@@ -104,41 +71,37 @@ public class GameManager : MonoBehaviour
 
         isGameOver = true;
 
+        // Obtener stats finales
+        RunStats stats = statsTracker != null
+            ? statsTracker.GetFinalStats()
+            : new RunStats(0f, 0f);
+
         if (showDebug)
         {
             Debug.Log($"=== GAME OVER ===");
-            Debug.Log($"Distance: {distanceTraveled:F1}m");
-            Debug.Log($"Time Alive: {timeAlive:F1}s");
+            Debug.Log($"Distance: {stats.distance:F1}m");
+            Debug.Log($"Time Alive: {stats.time:F1}s");
         }
 
-        // Detener tiempo
+        // Pausar juego
         Time.timeScale = 0f;
 
-        // Mostrar Game Over UI
-        if (gameOverPanel != null)
+        // Ocultar HUD
+        if (hudManager != null)
         {
-            gameOverPanel.SetActive(true);
+            hudManager.Hide();
+        }
 
-            if (finalDistanceText != null)
-            {
-                finalDistanceText.text = $"Distance: {distanceTraveled:F1}m";
-            }
-
-            if (finalTimeAliveText != null)
-            {
-                int minutes = Mathf.FloorToInt(timeAlive / 60f);
-                int seconds = Mathf.FloorToInt(timeAlive % 60f);
-                finalTimeAliveText.text = $"Time: {minutes:00}:{seconds:00}";
-            }
+        // Mostrar Game Over UI
+        if (gameOverUI != null)
+        {
+            gameOverUI.Show(stats.distance, stats.time);
         }
     }
 
     public void RestartGame()
     {
-        // Restaurar timeScale
         Time.timeScale = 1f;
-
-        // Recargar escena
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 

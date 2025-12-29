@@ -386,10 +386,10 @@ GameObject:
   - component: {fileID: 6660822945240645772}
   - component: {fileID: 2778158109702548005}
   - component: {fileID: 1764443263640273933}
-  - component: {fileID: 3412328325973040220}
-  - component: {fileID: 2647056474812330984}
   - component: {fileID: 271761362455759328}
   - component: {fileID: 3278791950384423495}
+  - component: {fileID: 3412328325973040220}
+  - component: {fileID: 2647056474812330984}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -451,6 +451,46 @@ MonoBehaviour:
   chargingColor: {r: 1, g: 0.8, b: 0, a: 1}
   boostColor: {r: 0, g: 1, b: 1, a: 1}
   showDebug: 1
+--- !u!114 &271761362455759328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2749647183928182145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ade2379028731949b469688613dd795, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxShield: 100
+  maxEnergy: 100
+  shieldDecaySlow: -20
+  shieldRegenSlow: 5
+  shieldRegenMedium: 15
+  shieldRegenFast: 25
+  frontalImpactDamage: 30
+  lateralImpactDamage: 10
+  impactAngleThreshold: 45
+  shieldDecayPerEnemy: 5
+  gracePeriodDuration: 2
+--- !u!114 &3278791950384423495
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2749647183928182145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1037935e8ab59d4e96be6abae54af45, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxAttachedEnemies: 10
+  massPerEnemy: 10
+  dragPerEnemy: 0.15
+  stationaryTimeToDeathWithBallast: 1
+  stationarySpeedThreshold: 0.5
 --- !u!136 &3412328325973040220
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -501,46 +541,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &271761362455759328
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2749647183928182145}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3ade2379028731949b469688613dd795, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxShield: 100
-  maxEnergy: 100
-  shieldDecaySlow: -20
-  shieldRegenSlow: 5
-  shieldRegenMedium: 15
-  shieldRegenFast: 25
-  frontalImpactDamage: 30
-  lateralImpactDamage: 10
-  impactAngleThreshold: 45
-  shieldDecayPerEnemy: 5
-  gracePeriodDuration: 2
---- !u!114 &3278791950384423495
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2749647183928182145}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1037935e8ab59d4e96be6abae54af45, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxAttachedEnemies: 10
-  massPerEnemy: 10
-  dragPerEnemy: 0.15
-  stationaryTimeToDeathWithBallast: 1
-  stationarySpeedThreshold: 0.5
 --- !u!1 &3400527865651820697
 GameObject:
   m_ObjectHideFlags: 0
