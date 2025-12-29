@@ -325,13 +325,31 @@ public class LevelChunk : MonoBehaviour
         }
         spawnedDecorations.Clear();
 
+        // CRÍTICO: Solo retornar al pool enemigos que NO están pegados
+        List<GameObject> enemiesToReturn = new List<GameObject>();
+
         foreach (var enemy in spawnedEnemies)
         {
             if (enemy != null && enemyPoolManager != null)
             {
-                enemyPoolManager.ReturnEnemy(enemy);
+                Enemy enemyComponent = enemy.GetComponent<Enemy>();
+                if (enemyComponent != null && !enemyComponent.IsAttachedToPlayer)
+                {
+                    enemiesToReturn.Add(enemy);
+                }
+                else if (showDebug && enemyComponent != null && enemyComponent.IsAttachedToPlayer)
+                {
+                    Debug.Log($"Chunk {chunkCoordinate}: Enemy {enemy.name} is attached, NOT returning to pool");
+                }
             }
         }
+
+        // Retornar solo los enemigos NO pegados
+        foreach (var enemy in enemiesToReturn)
+        {
+            enemyPoolManager.ReturnEnemy(enemy);
+        }
+
         spawnedEnemies.Clear();
 
         DestroyActiveEnemies();
@@ -347,19 +365,48 @@ public class LevelChunk : MonoBehaviour
 
     private void DestroyActiveEnemies()
     {
+        List<Enemy> enemiesToDestroy = new List<Enemy>();
+        List<Enemy> attachedEnemies = new List<Enemy>();
+
         foreach (var enemy in activeEnemies)
         {
             if (enemy != null)
             {
-                Destroy(enemy.gameObject);
+                // Verificar si está pegado usando la propiedad pública
+                if (!enemy.IsAttachedToPlayer)
+                {
+                    enemiesToDestroy.Add(enemy);
+                }
+                else
+                {
+                    attachedEnemies.Add(enemy);
+                    if (showDebug)
+                    {
+                        Debug.Log($"Chunk {chunkCoordinate}: Enemy {enemy.name} attached to player, skipping destroy");
+                    }
+                }
             }
         }
 
+        // Destruir solo los enemigos NO pegados
+        foreach (var enemy in enemiesToDestroy)
+        {
+            Destroy(enemy.gameObject);
+        }
+
+        // IMPORTANTE: Limpiar solo los enemigos destruidos de la lista
         activeEnemies.Clear();
 
-        if (showDebug && activeEnemies.Count > 0)
+        // Re-agregar los enemigos pegados para que no se pierda la referencia
+        foreach (var enemy in attachedEnemies)
         {
-            Debug.Log($"Chunk {chunkCoordinate}: Destroyed {activeEnemies.Count} enemies");
+            activeEnemies.Add(enemy);
+        }
+
+        if (showDebug)
+        {
+            int totalBefore = enemiesToDestroy.Count + attachedEnemies.Count;
+            Debug.Log($"Chunk {chunkCoordinate}: Destroyed {enemiesToDestroy.Count}/{totalBefore} enemies. {attachedEnemies.Count} still attached to player");
         }
     }
 
