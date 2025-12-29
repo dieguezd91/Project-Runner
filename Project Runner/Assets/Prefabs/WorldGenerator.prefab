@@ -46,16 +46,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunkPrefab: {fileID: 0}
   playerTransform: {fileID: 0}
-  enemyPoolManager: {fileID: 0}
+  enemySpawner: {fileID: 0}
   obstaclePoolManager: {fileID: 0}
   decorationPoolManager: {fileID: 0}
   chunkSize: 10
   viewDistance: 5
   terrainConfig: {fileID: 11400000, guid: 9949c05105962e84d835304d8217ccf4, type: 2}
   useProceduralTerrain: 1
-  spawnEnemiesOnGeneration: 0
+  useDifficultyProgression: 1
+  difficultyManager: {fileID: 0}
+  spawnEnemiesOnGeneration: 1
   enemiesPerChunk: 1
-  startSpawnDelay: 5
   spawnObstaclesOnGeneration: 1
   obstaclesPerChunk: 1
   minDistanceBetweenObstacles: 5

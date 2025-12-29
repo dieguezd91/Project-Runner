@@ -15,13 +15,6 @@ public class DifficultyManager : MonoBehaviour
         [Tooltip("Rango de obstáculos por chunk cuando spawneamos")]
         public Vector2Int obstaclesPerChunkRange = new Vector2Int(1, 2);
 
-        [Tooltip("Probabilidad de spawn de enemigos (0-1)")]
-        [Range(0f, 1f)]
-        public float enemySpawnChance = 0.3f;
-
-        [Tooltip("Rango de enemigos por chunk cuando spawneamos")]
-        public Vector2Int enemiesPerChunkRange = new Vector2Int(1, 3);
-
         [Tooltip("Nombre descriptivo del tier")]
         public string tierName = "Easy";
     }
@@ -35,8 +28,6 @@ public class DifficultyManager : MonoBehaviour
             startTime = 0f,
             obstacleSpawnChance = 0.3f,
             obstaclesPerChunkRange = new Vector2Int(0, 1),
-            enemySpawnChance = 0f,
-            enemiesPerChunkRange = new Vector2Int(0, 0),
             tierName = "Tutorial (0-30s)"
         },
         new DifficultyTier
@@ -44,8 +35,6 @@ public class DifficultyManager : MonoBehaviour
             startTime = 30f,
             obstacleSpawnChance = 0.5f,
             obstaclesPerChunkRange = new Vector2Int(1, 1),
-            enemySpawnChance = 0.2f,
-            enemiesPerChunkRange = new Vector2Int(0, 1),
             tierName = "Easy (30s-1min)"
         },
         new DifficultyTier
@@ -53,8 +42,6 @@ public class DifficultyManager : MonoBehaviour
             startTime = 60f,
             obstacleSpawnChance = 0.7f,
             obstaclesPerChunkRange = new Vector2Int(1, 2),
-            enemySpawnChance = 0.4f,
-            enemiesPerChunkRange = new Vector2Int(1, 2),
             tierName = "Medium (1-2min)"
         },
         new DifficultyTier
@@ -62,8 +49,6 @@ public class DifficultyManager : MonoBehaviour
             startTime = 120f,
             obstacleSpawnChance = 0.9f,
             obstaclesPerChunkRange = new Vector2Int(1, 3),
-            enemySpawnChance = 0.6f,
-            enemiesPerChunkRange = new Vector2Int(2, 4),
             tierName = "Hard (2min+)"
         }
     };
@@ -188,21 +173,6 @@ public class DifficultyManager : MonoBehaviour
         );
     }
 
-    public bool ShouldSpawnEnemies()
-    {
-        if (currentTier == null) return false;
-        return Random.value <= currentTier.enemySpawnChance;
-    }
-
-    public int GetEnemyCount()
-    {
-        if (currentTier == null) return 0;
-        return Random.Range(
-            currentTier.enemiesPerChunkRange.x,
-            currentTier.enemiesPerChunkRange.y + 1
-        );
-    }
-
     public string GetFormattedTime()
     {
         int minutes = Mathf.FloorToInt(gameTime / 60f);
@@ -243,8 +213,5 @@ public class DifficultyManager : MonoBehaviour
         GUI.Label(new Rect(x + 10, y, w - 20, h),
             $"Obstacle Chance: {(currentTier?.obstacleSpawnChance ?? 0) * 100:F0}%", style);
         y += h;
-
-        GUI.Label(new Rect(x + 10, y, w - 20, h),
-            $"Enemy Chance: {(currentTier?.enemySpawnChance ?? 0) * 100:F0}%", style);
     }
 }

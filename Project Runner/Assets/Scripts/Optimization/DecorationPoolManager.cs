@@ -172,6 +172,8 @@ public class DecorationPoolManager : MonoBehaviour
 
         if (decorationPools.ContainsKey(tracker.decorationData))
         {
+            decoration.transform.SetParent(this.transform);
+
             decorationPools[tracker.decorationData].Release(decoration);
         }
     }

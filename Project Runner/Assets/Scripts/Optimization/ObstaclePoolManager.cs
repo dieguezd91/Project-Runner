@@ -100,9 +100,6 @@ public class ObstaclePoolManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Obtiene un obstáculo aleatorio basado en pesos de probabilidad
-    /// </summary>
     public GameObject GetRandomObstacle(Vector3 position, Quaternion rotation)
     {
         ObstacleConfigSO selected = SelectWeightedRandom();
@@ -111,9 +108,6 @@ public class ObstaclePoolManager : MonoBehaviour
         return GetObstacle(selected, position, rotation);
     }
 
-    /// <summary>
-    /// Obtiene un obstáculo específico del pool
-    /// </summary>
     public GameObject GetObstacle(ObstacleConfigSO data, Vector3 position, Quaternion rotation)
     {
         if (!obstaclePools.ContainsKey(data))
@@ -148,9 +142,6 @@ public class ObstaclePoolManager : MonoBehaviour
         return obstacle;
     }
 
-    /// <summary>
-    /// Devuelve un obstáculo al pool
-    /// </summary>
     public void ReturnObstacle(GameObject obstacle)
     {
         if (obstacle == null) return;
@@ -165,13 +156,12 @@ public class ObstaclePoolManager : MonoBehaviour
 
         if (obstaclePools.ContainsKey(tracker.obstacleData))
         {
+            obstacle.transform.SetParent(this.transform);
+
             obstaclePools[tracker.obstacleData].Release(obstacle);
         }
     }
 
-    /// <summary>
-    /// Selección aleatoria ponderada por peso
-    /// </summary>
     private ObstacleConfigSO SelectWeightedRandom()
     {
         if (obstacleDatabase.Length == 0) return null;
@@ -229,9 +219,6 @@ public class ObstaclePoolManager : MonoBehaviour
     }
 }
 
-/// <summary>
-/// Componente helper para trackear qué ObstacleData usó este objeto
-/// </summary>
 public class PooledObstacle : MonoBehaviour
 {
     [HideInInspector]

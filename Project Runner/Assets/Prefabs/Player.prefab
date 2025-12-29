@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5779528934974296645}
   - component: {fileID: 5436006990191163598}
   - component: {fileID: 1601273112794782673}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Left Eye
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -121,7 +121,7 @@ GameObject:
   - component: {fileID: 4980769718299333704}
   - component: {fileID: 8697803211612272579}
   - component: {fileID: 2213578880142574216}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Rigth Eye
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -228,7 +228,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4541131234515910008}
   - component: {fileID: 2954472173072540167}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Trail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -388,9 +388,10 @@ GameObject:
   - component: {fileID: 1764443263640273933}
   - component: {fileID: 3412328325973040220}
   - component: {fileID: 2647056474812330984}
-  m_Layer: 0
+  - component: {fileID: 7963786200596025962}
+  m_Layer: 6
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -499,6 +500,18 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!114 &7963786200596025962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2749647183928182145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f7905dd068c41a4fb2e27902e8006d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3400527865651820697
 GameObject:
   m_ObjectHideFlags: 0
@@ -511,7 +524,7 @@ GameObject:
   - component: {fileID: 1520194186272917508}
   - component: {fileID: 7142766396828768660}
   - component: {fileID: 8600873806659137199}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Rigth Pupil
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -616,7 +629,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8923968049143583848}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: CameraTarget
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -649,7 +662,7 @@ GameObject:
   - component: {fileID: 5004995635839107415}
   - component: {fileID: 7831443257578931115}
   - component: {fileID: 688060299804429293}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -739,7 +752,7 @@ GameObject:
   - component: {fileID: 3564069589086202697}
   - component: {fileID: 8916806983107036566}
   - component: {fileID: 3987260696071087866}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Left Pupil
   m_TagString: Untagged
   m_Icon: {fileID: 0}
