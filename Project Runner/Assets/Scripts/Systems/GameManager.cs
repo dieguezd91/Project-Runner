@@ -12,11 +12,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] private RunStatsTracker statsTracker;
     [SerializeField] private GameOverUI gameOverUI;
     [SerializeField] private HUDManager hudManager;
+    [SerializeField] private CountdownUI countdownUI;
 
     [Header("Debug")]
     [SerializeField] private bool showDebug = true;
 
     private bool isGameOver = false;
+    private bool hasGameStarted = false;
 
     public static GameManager Instance { get; private set; }
 
@@ -54,7 +56,12 @@ public class GameManager : MonoBehaviour
             hudManager = FindFirstObjectByType<HUDManager>();
         }
 
-        // Suscribirse a muerte del jugador
+        if (countdownUI == null)
+        {
+            countdownUI = FindFirstObjectByType<CountdownUI>();
+        }
+
+        // Suscribirse a eventos
         if (playerHealth != null)
         {
             playerHealth.OnPlayerDeath += HandlePlayerDeath;
@@ -62,6 +69,41 @@ public class GameManager : MonoBehaviour
         else
         {
             Debug.LogError("GameManager: PlayerHealth not found!");
+        }
+
+        if (countdownUI != null)
+        {
+            countdownUI.OnCountdownComplete += HandleCountdownComplete;
+        }
+
+        // Pausar el juego hasta que termine el countdown
+        Time.timeScale = 0f;
+
+        // Desactivar tracking hasta que empiece
+        if (statsTracker != null)
+        {
+            statsTracker.StopTracking();
+        }
+    }
+
+    private void HandleCountdownComplete()
+    {
+        if (hasGameStarted) return;
+
+        hasGameStarted = true;
+
+        if (showDebug)
+        {
+            Debug.Log("Game Started!");
+        }
+
+        // Reanudar el juego
+        Time.timeScale = 1f;
+
+        // Iniciar tracking
+        if (statsTracker != null)
+        {
+            statsTracker.StartTracking();
         }
     }
 
@@ -124,6 +166,11 @@ public class GameManager : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.OnPlayerDeath -= HandlePlayerDeath;
+        }
+
+        if (countdownUI != null)
+        {
+            countdownUI.OnCountdownComplete -= HandleCountdownComplete;
         }
     }
 }

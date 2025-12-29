@@ -135,6 +135,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3113521632567161993, guid: 409f125a14891a84bb264fef6b1416fd, type: 3}
   m_PrefabInstance: {fileID: 1204182118}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &342033954 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3329942991491563409, guid: 1b67dea7d1bf2024ba876d0d83f8dc34, type: 3}
+  m_PrefabInstance: {fileID: 6531400245734468022}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98074f0e7de798d4b983e6decb25236a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -955,6 +966,10 @@ PrefabInstance:
       propertyPath: hudManager
       value: 
       objectReference: {fileID: 1900374272}
+    - target: {fileID: 5499469141661890468, guid: 11b047f7f7c675340b6a249620d54740, type: 3}
+      propertyPath: countdownUI
+      value: 
+      objectReference: {fileID: 342033954}
     - target: {fileID: 5499469141661890468, guid: 11b047f7f7c675340b6a249620d54740, type: 3}
       propertyPath: playerHealth
       value: 

@@ -69,6 +69,8 @@ public class PlayerLocomotion : MonoBehaviour
 
     private void Update()
     {
+        if (Time.timeScale == 0f) return;
+
         ReadInput();
         CheckGround();
         HandleJump();
@@ -76,6 +78,8 @@ public class PlayerLocomotion : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (Time.timeScale == 0f) return;
+
         ApplyMomentum();
         ApplyGravity();
     }
