@@ -14,6 +14,8 @@ public class LevelChunk : MonoBehaviour
     private List<GameObject> spawnedDecorations = new List<GameObject>();
     private List<GameObject> terrainInstances = new List<GameObject>();
 
+    private List<Enemy> activeEnemies = new List<Enemy>();
+
     private MeshRenderer originalMeshRenderer;
     private MeshCollider originalMeshCollider;
 
@@ -42,6 +44,32 @@ public class LevelChunk : MonoBehaviour
     {
         Setup(coordinate, obstaclePool, decorationPool);
         GenerateTerrainVariants(terrainConfig, chunkSize);
+    }
+
+    public void RegisterEnemy(Enemy enemy)
+    {
+        if (enemy != null && !activeEnemies.Contains(enemy))
+        {
+            activeEnemies.Add(enemy);
+
+            if (showDebug)
+            {
+                Debug.Log($"Chunk {chunkCoordinate}: Enemy registered. Total: {activeEnemies.Count}");
+            }
+        }
+    }
+
+    public void UnregisterEnemy(Enemy enemy)
+    {
+        if (activeEnemies.Contains(enemy))
+        {
+            activeEnemies.Remove(enemy);
+
+            if (showDebug)
+            {
+                Debug.Log($"Chunk {chunkCoordinate}: Enemy unregistered. Total: {activeEnemies.Count}");
+            }
+        }
     }
 
     private void GenerateTerrainVariants(TerrainConfigSO terrainConfig, float chunkSize)
@@ -254,12 +282,32 @@ public class LevelChunk : MonoBehaviour
         }
         spawnedDecorations.Clear();
 
+        DestroyActiveEnemies();
+
         ClearPreviousTerrainInstances();
         ShowOriginalMesh();
 
         if (showDebug)
         {
             Debug.Log($"Chunk {chunkCoordinate} recycled");
+        }
+    }
+
+    private void DestroyActiveEnemies()
+    {
+        foreach (var enemy in activeEnemies)
+        {
+            if (enemy != null)
+            {
+                Destroy(enemy.gameObject);
+            }
+        }
+
+        activeEnemies.Clear();
+
+        if (showDebug && activeEnemies.Count > 0)
+        {
+            Debug.Log($"Chunk {chunkCoordinate}: Destroyed {activeEnemies.Count} enemies");
         }
     }
 

@@ -6,18 +6,19 @@ public class Enemy : MonoBehaviour
 
     private Transform player;
     private bool isChasing;
+    private LevelChunk currentChunk;
 
     void Start()
     {
-        // Buscar al jugador en la escena
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null)
         {
             player = playerObj.transform;
         }
 
-        // Color visual para debug
         GetComponentInChildren<Renderer>().material.color = data.debugColor;
+
+        RegisterToNearestChunk();
     }
 
     void Update()
@@ -35,20 +36,69 @@ public class Enemy : MonoBehaviour
 
     void ChasePlayer()
     {
-        // Dirección hacia el jugador
         Vector3 direction = (player.position - transform.position).normalized;
-
-        // Movimiento
         transform.position += direction * data.moveSpeed * Time.deltaTime;
 
-        // Rotación suave hacia el jugador
         Quaternion targetRotation = Quaternion.LookRotation(direction);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, data.rotationSpeed * Time.deltaTime);
     }
 
+    void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Obstacle"))
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        Debug.Log($"Enemy {name} murió");
+
+        UnregisterFromChunk();
+
+        Destroy(gameObject);
+    }
+
+    private void RegisterToNearestChunk()
+    {
+        LevelChunk[] chunks = FindObjectsOfType<LevelChunk>();
+        float minDistance = float.MaxValue;
+        LevelChunk nearestChunk = null;
+
+        foreach (var chunk in chunks)
+        {
+            float distance = Vector3.Distance(transform.position, chunk.transform.position);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                nearestChunk = chunk;
+            }
+        }
+
+        if (nearestChunk != null)
+        {
+            currentChunk = nearestChunk;
+            currentChunk.RegisterEnemy(this);
+        }
+    }
+
+    private void UnregisterFromChunk()
+    {
+        if (currentChunk != null)
+        {
+            currentChunk.UnregisterEnemy(this);
+            currentChunk = null;
+        }
+    }
+
+    void OnDestroy()
+    {
+        UnregisterFromChunk();
+    }
+
     void OnDrawGizmosSelected()
     {
-        // Visualizar rango de persecución en el editor
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, data.chaseRange);
     }

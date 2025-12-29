@@ -340,55 +340,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37fd2fbaef3807143b2db2c113fca5f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &1884212290
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1884212292}
-  - component: {fileID: 1884212291}
-  m_Layer: 0
-  m_Name: EnemySpawner
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1884212291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1884212290}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5c6ee4e6a7a0d34b84fe817dc3e0e3b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  poolManager: {fileID: 0}
-  playerTransform: {fileID: 2067522527}
-  spawnHeight: 2
-  showDebug: 0
-  <TotalActiveEnemies>k__BackingField: 0
---- !u!4 &1884212292
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1884212290}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &2067522527 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6660822945240645772, guid: bd57d806fd60e434a9bd254152633741, type: 3}
@@ -571,7 +522,7 @@ PrefabInstance:
     - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: enemySpawner
       value: 
-      objectReference: {fileID: 1884212291}
+      objectReference: {fileID: 0}
     - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: playerTransform
       value: 
@@ -789,4 +740,3 @@ SceneRoots:
   - {fileID: 1204182118}
   - {fileID: 1915768255624161424}
   - {fileID: 723205160790386072}
-  - {fileID: 1884212292}
