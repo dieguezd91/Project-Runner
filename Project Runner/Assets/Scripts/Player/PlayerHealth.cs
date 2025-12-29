@@ -1,7 +1,10 @@
 ﻿using UnityEngine;
 using System;
-using System.Collections.Generic;
 
+/// <summary>
+/// Maneja la vida del jugador: Shield, Energy, Damage, Muerte.
+/// NO maneja attachment de enemigos (eso es EnemyAttachmentManager).
+/// </summary>
 public class PlayerHealth : MonoBehaviour
 {
     [Header("Resources")]
@@ -9,39 +12,30 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private float maxEnergy = 100f;
 
     [Header("Shield Regeneration by Speed")]
-    [SerializeField] private float shieldDecaySlow = -20f;      // 0-10 m/s
-    [SerializeField] private float shieldRegenSlow = 5f;        // 10-20 m/s
-    [SerializeField] private float shieldRegenMedium = 15f;     // 20-30 m/s
-    [SerializeField] private float shieldRegenFast = 25f;       // 30+ m/s
+    [SerializeField] private float shieldDecaySlow = -20f;
+    [SerializeField] private float shieldRegenSlow = 5f;
+    [SerializeField] private float shieldRegenMedium = 15f;
+    [SerializeField] private float shieldRegenFast = 25f;
 
     [Header("Damage Settings")]
     [SerializeField] private float frontalImpactDamage = 30f;
     [SerializeField] private float lateralImpactDamage = 10f;
     [SerializeField] private float impactAngleThreshold = 45f;
 
-    [Header("Ballast System")]
-    [SerializeField] private float massPerEnemy = 10f;
-    [SerializeField] private float dragPerEnemy = 0.15f;
+    [Header("Ballast Settings")]
     [SerializeField] private float shieldDecayPerEnemy = 5f;
-    [SerializeField] private int maxAttachedEnemies = 10;
-    [SerializeField] private float stationaryTimeToDeathWithBallast = 1f;
-    [SerializeField] private float stationarySpeedThreshold = 0.5f;
 
     [Header("Grace Period")]
     [SerializeField] private float gracePeriodDuration = 2f;
 
     private PlayerLocomotion locomotion;
-    private Rigidbody rb;
+    private EnemyAttachmentManager attachmentManager;
 
     public float CurrentShield { get; private set; }
     public float CurrentEnergy { get; private set; }
     public bool IsInGracePeriod { get; private set; }
     public bool IsDead { get; private set; }
 
-    private List<Enemy> attachedEnemies = new List<Enemy>();
-    private float baseMass;
-    private float baseDrag;
-    private float stationaryTimer;
     private float gracePeriodTimer;
 
     public event Action OnPlayerDeath;
@@ -51,10 +45,7 @@ public class PlayerHealth : MonoBehaviour
     private void Awake()
     {
         locomotion = GetComponent<PlayerLocomotion>();
-        rb = GetComponent<Rigidbody>();
-
-        baseMass = rb.mass;
-        baseDrag = rb.linearDamping;
+        attachmentManager = GetComponent<EnemyAttachmentManager>();
 
         CurrentShield = maxShield;
         CurrentEnergy = maxEnergy;
@@ -69,7 +60,6 @@ public class PlayerHealth : MonoBehaviour
 
         RegenerateShield(currentSpeed);
         HandleGracePeriod();
-        CheckBallastDeath(currentSpeed);
         ApplyBallastShieldDecay();
     }
 
@@ -117,34 +107,11 @@ public class PlayerHealth : MonoBehaviour
         Debug.Log("¡GRACE PERIOD ACTIVADO! 2 segundos");
     }
 
-    private void CheckBallastDeath(float currentSpeed)
-    {
-        if (attachedEnemies.Count == 0)
-        {
-            stationaryTimer = 0f;
-            return;
-        }
-
-        if (currentSpeed < stationarySpeedThreshold)
-        {
-            stationaryTimer += Time.deltaTime;
-
-            if (stationaryTimer >= stationaryTimeToDeathWithBallast)
-            {
-                Die("DEVORADO POR LA HORDA");
-            }
-        }
-        else
-        {
-            stationaryTimer = 0f;
-        }
-    }
-
     private void ApplyBallastShieldDecay()
     {
-        if (attachedEnemies.Count == 0) return;
+        if (attachmentManager == null || !attachmentManager.HasAttachedEnemies) return;
 
-        float decayRate = attachedEnemies.Count * shieldDecayPerEnemy;
+        float decayRate = attachmentManager.GetShieldDecayRate(shieldDecayPerEnemy);
         CurrentShield -= decayRate * Time.deltaTime;
 
         if (CurrentShield < 0) CurrentShield = 0;
@@ -166,39 +133,7 @@ public class PlayerHealth : MonoBehaviour
         OnShieldChanged?.Invoke(CurrentShield);
     }
 
-    public void AttachEnemy(Enemy enemy)
-    {
-        if (attachedEnemies.Count >= maxAttachedEnemies)
-        {
-            Debug.LogWarning("Máximo de enemigos pegados alcanzado!");
-            return;
-        }
-
-        if (!attachedEnemies.Contains(enemy))
-        {
-            attachedEnemies.Add(enemy);
-            UpdateBallastPhysics();
-            Debug.Log($"Enemigo pegado! Total: {attachedEnemies.Count}");
-        }
-    }
-
-    public void DetachEnemy(Enemy enemy)
-    {
-        if (attachedEnemies.Remove(enemy))
-        {
-            UpdateBallastPhysics();
-            Debug.Log($"Enemigo despegado! Total: {attachedEnemies.Count}");
-        }
-    }
-
-    private void UpdateBallastPhysics()
-    {
-        int count = attachedEnemies.Count;
-        rb.mass = baseMass + (count * massPerEnemy);
-        rb.linearDamping = baseDrag + (count * dragPerEnemy);
-    }
-
-    private void Die(string cause = "Unknown")
+    public void Die(string cause = "Unknown")
     {
         if (IsDead) return;
 
@@ -223,8 +158,6 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    public int GetAttachedEnemiesCount() => attachedEnemies.Count;
-
     private void OnGUI()
     {
         if (!locomotion.showDebugGUI) return;
@@ -236,7 +169,7 @@ public class PlayerHealth : MonoBehaviour
         GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
         boxStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.7f));
 
-        float x = 370f; // Al lado del panel de locomotion
+        float x = 370f;
         float y = 10f;
         float w = 350f;
         float h = 320f;
@@ -269,27 +202,31 @@ public class PlayerHealth : MonoBehaviour
             GUILayout.Space(5);
         }
 
-        // LASTRE
-        style.normal.textColor = Color.white;
-        GUILayout.Label($"Enemigos Pegados: {attachedEnemies.Count}/{maxAttachedEnemies}", style);
-
-        if (attachedEnemies.Count > 0)
+        // LASTRE (obtenido del AttachmentManager)
+        if (attachmentManager != null)
         {
-            style.normal.textColor = Color.magenta;
-            GUILayout.Label($"Masa: {rb.mass:F1} kg (+{(rb.mass - baseMass):F1})", style);
-            GUILayout.Label($"Drag: {rb.linearDamping:F2} (+{(rb.linearDamping - baseDrag):F2})", style);
+            var debugInfo = attachmentManager.GetDebugInfo();
 
-            float currentSpeed = locomotion.GetCurrentSpeed();
-            if (currentSpeed < stationarySpeedThreshold)
+            style.normal.textColor = Color.white;
+            GUILayout.Label($"Enemigos Pegados: {debugInfo.count}/10", style);
+
+            if (debugInfo.count > 0)
             {
-                style.normal.textColor = Color.red;
-                GUILayout.Label($"⚠ STATIONARY: {stationaryTimer:F2}s / {stationaryTimeToDeathWithBallast:F1}s", style);
-            }
+                style.normal.textColor = Color.magenta;
+                GUILayout.Label($"Masa Extra: +{debugInfo.mass:F1} kg", style);
+                GUILayout.Label($"Drag Extra: +{debugInfo.drag:F2}", style);
 
-            // Shield decay por lastre
-            float decayRate = attachedEnemies.Count * shieldDecayPerEnemy;
-            style.normal.textColor = Color.yellow;
-            GUILayout.Label($"Shield Decay: -{decayRate:F1}%/s", style);
+                float currentSpeed = locomotion.GetCurrentSpeed();
+                if (currentSpeed < 0.5f)
+                {
+                    style.normal.textColor = Color.red;
+                    GUILayout.Label($"⚠ STATIONARY: {debugInfo.stationaryTime:F2}s / 1.0s", style);
+                }
+
+                float decayRate = attachmentManager.GetShieldDecayRate(shieldDecayPerEnemy);
+                style.normal.textColor = Color.yellow;
+                GUILayout.Label($"Shield Decay: -{decayRate:F1}%/s", style);
+            }
         }
 
         GUILayout.Space(5);
