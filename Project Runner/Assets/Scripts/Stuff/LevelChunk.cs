@@ -15,6 +15,8 @@ public class LevelChunk : MonoBehaviour
     private List<GameObject> terrainInstances = new List<GameObject>();
 
     private List<Enemy> activeEnemies = new List<Enemy>();
+    private EnemyPoolManager enemyPoolManager;
+    private List<GameObject> spawnedEnemies = new List<GameObject>();
 
     private MeshRenderer originalMeshRenderer;
     private MeshCollider originalMeshCollider;
@@ -27,11 +29,13 @@ public class LevelChunk : MonoBehaviour
         originalMeshCollider = GetComponent<MeshCollider>();
     }
 
-    public void Setup(Vector2Int coordinate, ObstaclePoolManager obstaclePool, DecorationPoolManager decorationPool)
+    public void Setup(Vector2Int coordinate, ObstaclePoolManager obstaclePool,
+                      DecorationPoolManager decorationPool, EnemyPoolManager enemyPool)
     {
         chunkCoordinate = coordinate;
         obstaclePoolManager = obstaclePool;
         decorationPoolManager = decorationPool;
+        enemyPoolManager = enemyPool;
 
         if (showDebug)
         {
@@ -40,9 +44,10 @@ public class LevelChunk : MonoBehaviour
     }
 
     public void SetupWithTerrain(Vector2Int coordinate, ObstaclePoolManager obstaclePool,
-                                 DecorationPoolManager decorationPool, TerrainConfigSO terrainConfig, float chunkSize)
+                                 DecorationPoolManager decorationPool, EnemyPoolManager enemyPool,
+                                 TerrainConfigSO terrainConfig, float chunkSize)
     {
-        Setup(coordinate, obstaclePool, decorationPool);
+        Setup(coordinate, obstaclePool, decorationPool, enemyPool);
         GenerateTerrainVariants(terrainConfig, chunkSize);
     }
 
@@ -236,6 +241,44 @@ public class LevelChunk : MonoBehaviour
         }
     }
 
+    public void PopulateEnemies(float chunkSize, int count, float minDistance, List<Vector3> obstaclesToAvoid)
+    {
+        if (enemyPoolManager == null || count <= 0) return;
+
+        List<Vector3> allExistingPositions = new List<Vector3>(obstaclesToAvoid);
+        int attempts = 0;
+        int maxAttempts = count * 15;
+
+        while (spawnedEnemies.Count < count && attempts < maxAttempts)
+        {
+            attempts++;
+            Vector3 randomPos = GetRandomPositionInChunk(chunkSize);
+
+            if (IsPositionValid(randomPos, allExistingPositions, minDistance))
+            {
+                Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+                GameObject enemy = enemyPoolManager.GetEnemy(randomPos, randomRotation);
+
+                if (enemy != null)
+                {
+                    Enemy enemyComponent = enemy.GetComponent<Enemy>();
+                    if (enemyComponent != null)
+                    {
+                        enemyComponent.SetCurrentChunk(this);
+                    }
+
+                    spawnedEnemies.Add(enemy);
+                    allExistingPositions.Add(randomPos);
+                }
+            }
+        }
+
+        if (showDebug)
+        {
+            Debug.Log($"Chunk {chunkCoordinate}: Spawned {spawnedEnemies.Count}/{count} enemies in {attempts} attempts");
+        }
+    }
+
     private Vector3 GetRandomPositionInChunk(float chunkSize)
     {
         float halfSize = chunkSize / 2f;
@@ -281,6 +324,15 @@ public class LevelChunk : MonoBehaviour
             }
         }
         spawnedDecorations.Clear();
+
+        foreach (var enemy in spawnedEnemies)
+        {
+            if (enemy != null && enemyPoolManager != null)
+            {
+                enemyPoolManager.ReturnEnemy(enemy);
+            }
+        }
+        spawnedEnemies.Clear();
 
         DestroyActiveEnemies();
 

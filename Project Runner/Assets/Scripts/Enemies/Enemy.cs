@@ -2,8 +2,7 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-    [SerializeField] private EnemyData data;
-
+    private EnemyConfigSO config;
     private Transform player;
     private bool isChasing;
     private LevelChunk currentChunk;
@@ -15,18 +14,34 @@ public class Enemy : MonoBehaviour
         {
             player = playerObj.transform;
         }
+    }
 
-        GetComponentInChildren<Renderer>().material.color = data.debugColor;
+    public void Initialize(EnemyConfigSO enemyConfig)
+    {
+        config = enemyConfig;
 
-        RegisterToNearestChunk();
+        if (config != null)
+        {
+            Renderer renderer = GetComponentInChildren<Renderer>();
+            if (renderer != null)
+            {
+                renderer.material.color = config.debugColor;
+            }
+
+            if (config.randomScale)
+            {
+                float randomScale = Random.Range(config.minScale, config.maxScale);
+                transform.localScale = Vector3.one * randomScale;
+            }
+        }
     }
 
     void Update()
     {
-        if (player == null) return;
+        if (player == null || config == null) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-        isChasing = distanceToPlayer <= data.chaseRange;
+        isChasing = distanceToPlayer <= config.chaseRange;
 
         if (isChasing)
         {
@@ -37,10 +52,11 @@ public class Enemy : MonoBehaviour
     void ChasePlayer()
     {
         Vector3 direction = (player.position - transform.position).normalized;
-        transform.position += direction * data.moveSpeed * Time.deltaTime;
+        transform.position += direction * config.moveSpeed * Time.deltaTime;
 
         Quaternion targetRotation = Quaternion.LookRotation(direction);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, data.rotationSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation,
+                                              config.rotationSpeed * Time.deltaTime);
     }
 
     void OnCollisionEnter(Collision collision)
@@ -53,53 +69,31 @@ public class Enemy : MonoBehaviour
 
     void Die()
     {
-        Debug.Log($"Enemy {name} murió");
+        Debug.Log($"Enemy {config?.enemyName ?? name} murió");
 
-        UnregisterFromChunk();
-
-        Destroy(gameObject);
-    }
-
-    private void RegisterToNearestChunk()
-    {
-        LevelChunk[] chunks = FindObjectsOfType<LevelChunk>();
-        float minDistance = float.MaxValue;
-        LevelChunk nearestChunk = null;
-
-        foreach (var chunk in chunks)
+        if (currentChunk != null)
         {
-            float distance = Vector3.Distance(transform.position, chunk.transform.position);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nearestChunk = chunk;
-            }
+            currentChunk.UnregisterEnemy(this);
         }
 
-        if (nearestChunk != null)
+        gameObject.SetActive(false);
+    }
+
+    public void SetCurrentChunk(LevelChunk chunk)
+    {
+        currentChunk = chunk;
+
+        if (currentChunk != null)
         {
-            currentChunk = nearestChunk;
             currentChunk.RegisterEnemy(this);
         }
     }
 
-    private void UnregisterFromChunk()
-    {
-        if (currentChunk != null)
-        {
-            currentChunk.UnregisterEnemy(this);
-            currentChunk = null;
-        }
-    }
-
-    void OnDestroy()
-    {
-        UnregisterFromChunk();
-    }
-
     void OnDrawGizmosSelected()
     {
+        if (config == null) return;
+
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, data.chaseRange);
+        Gizmos.DrawWireSphere(transform.position, config.chaseRange);
     }
 }

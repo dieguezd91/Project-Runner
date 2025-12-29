@@ -8,6 +8,7 @@ public class WorldGenerator : MonoBehaviour
     [SerializeField] private Transform playerTransform;
     [SerializeField] private ObstaclePoolManager obstaclePoolManager;
     [SerializeField] private DecorationPoolManager decorationPoolManager;
+    [SerializeField] private EnemyPoolManager enemyPoolManager;
 
     [Header("World Settings")]
     [SerializeField] private float chunkSize = 50f;
@@ -16,6 +17,12 @@ public class WorldGenerator : MonoBehaviour
     [Header("Terrain")]
     [SerializeField] private TerrainConfigSO terrainConfig;
     [SerializeField] private bool useProceduralTerrain = true;
+    
+    [Header("Enemy Spawning")]
+    [SerializeField] private bool spawnEnemiesOnGeneration = true;
+    [SerializeField][Range(0f, 1f)] private float enemySpawnChance = 0.5f;
+    [SerializeField][Range(1, 10)] private int enemiesPerChunk = 3;
+    [SerializeField][Range(3f, 10f)] private float minDistanceBetweenEnemies = 5f;
 
     [Header("Difficulty System")]
     [Tooltip("Usar sistema de dificultad progresiva")]
@@ -135,21 +142,20 @@ public class WorldGenerator : MonoBehaviour
 
         if (useProceduralTerrain && terrainConfig != null)
         {
-            chunk.SetupWithTerrain(coordinate, obstaclePoolManager, decorationPoolManager, terrainConfig, chunkSize);
+            chunk.SetupWithTerrain(coordinate, obstaclePoolManager, decorationPoolManager,
+                                  enemyPoolManager, terrainConfig, chunkSize);
         }
         else
         {
-            chunk.Setup(coordinate, obstaclePoolManager, decorationPoolManager);
+            chunk.Setup(coordinate, obstaclePoolManager, decorationPoolManager, enemyPoolManager);
         }
 
         int obstacleCount = GetObstacleCountForChunk();
-
         List<Vector3> obstaclePositions = new List<Vector3>();
 
         if (obstacleCount > 0 && obstaclePoolManager != null)
         {
             chunk.PopulateObstacles(chunkSize, obstacleCount, minDistanceBetweenObstacles);
-
             obstaclePositions = chunk.GetObstaclePositions();
         }
 
@@ -158,7 +164,17 @@ public class WorldGenerator : MonoBehaviour
             chunk.PopulateDecorations(chunkSize, decorationsPerChunk, minDistanceBetweenDecorations, obstaclePositions);
         }
 
+        if (spawnEnemiesOnGeneration && enemyPoolManager != null && ShouldSpawnEnemiesInChunk())
+        {
+            chunk.PopulateEnemies(chunkSize, enemiesPerChunk, minDistanceBetweenEnemies, obstaclePositions);
+        }
+
         activeChunks[coordinate] = chunk;
+    }
+
+    private bool ShouldSpawnEnemiesInChunk()
+    {
+        return Random.value <= enemySpawnChance;
     }
 
     private void RecycleChunk(Vector2Int coordinate)
