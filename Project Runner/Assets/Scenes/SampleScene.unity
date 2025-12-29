@@ -544,7 +544,7 @@ PrefabInstance:
       objectReference: {fileID: 1728361450}
     - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: enemySpawnChance
-      value: 0.01
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 8243479011647898571, guid: b6d099bb0fb85b644941b8ea908b4130, type: 3}
       propertyPath: difficultyManager
@@ -638,7 +638,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5450744137113981715, guid: 42b498abd3a3c1b4bb6086ce9db0c23e, type: 3}
       propertyPath: initialPoolSize
-      value: 10
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 5450744137113981715, guid: 42b498abd3a3c1b4bb6086ce9db0c23e, type: 3}
       propertyPath: enemyConfigs.Array.size

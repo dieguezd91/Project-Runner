@@ -8,8 +8,8 @@ public class CustomCamera : MonoBehaviour
     [SerializeField] private InputReader inputReader;
 
     [Header("Auto-Center Settings")]
-    [SerializeField] private float idleTimeBeforeCenter = 2.0f; // Segundos de inactividad antes de centrar
-    [SerializeField] private float centerSpeed = 3.0f; // Velocidad de rotación del centrado
+    [SerializeField] private float idleTimeBeforeCenter = 2.0f;
+    [SerializeField] private float centerSpeed = 3.0f;
 
     [Header("State (Read Only)")]
     [SerializeField] private float currentDistance;
@@ -20,8 +20,6 @@ public class CustomCamera : MonoBehaviour
     private Vector3 rotationVelocity;
     private float targetDistance;
     private Vector3 currentRotationEuler;
-
-    // Control de tiempo para el auto-centrado
     private float lastInputTime;
 
     private void Start()
@@ -50,7 +48,7 @@ public class CustomCamera : MonoBehaviour
         if (followTarget == null) return;
 
         HandleInput();
-        ApplyAutoCenter(); // Nueva lógica de centrado
+        ApplyAutoCenter();
         MoveCamera();
     }
 
@@ -58,17 +56,15 @@ public class CustomCamera : MonoBehaviour
     {
         Vector2 lookInput = inputReader.LookInput;
 
-        // Si hay movimiento en el input, actualizamos el tiempo de última actividad
         if (lookInput.sqrMagnitude > 0.01f)
         {
             lastInputTime = Time.time;
 
-            yaw += lookInput.x * config.mouseSensitivityX * Time.deltaTime;
-            pitch -= lookInput.y * config.mouseSensitivityY * Time.deltaTime;
+            yaw += lookInput.x * config.mouseSensitivityX * 0.01f;
+            pitch -= lookInput.y * config.mouseSensitivityY * 0.01f;
             pitch = Mathf.Clamp(pitch, config.pitchLimits.x, config.pitchLimits.y);
         }
 
-        // Zoom (Scroll)
         float scroll = Input.mouseScrollDelta.y;
         if (Mathf.Abs(scroll) > 0.01f)
         {
@@ -79,16 +75,10 @@ public class CustomCamera : MonoBehaviour
 
     private void ApplyAutoCenter()
     {
-        // Solo centramos si ha pasado el tiempo de inactividad y el jugador se está moviendo
-        // Usamos la rotación del target (jugador) como referencia trasera
         if (Time.time - lastInputTime > idleTimeBeforeCenter)
         {
             float targetYaw = followTarget.eulerAngles.y;
-
-            // Interpolación esférica del ángulo para evitar saltos y elegir el camino más corto
             yaw = Mathf.LerpAngle(yaw, targetYaw, centerSpeed * Time.deltaTime);
-
-            // Opcional: Centrar también el pitch a una altura por defecto (ej. 15 grados)
             pitch = Mathf.LerpAngle(pitch, 15f, centerSpeed * Time.deltaTime);
         }
     }

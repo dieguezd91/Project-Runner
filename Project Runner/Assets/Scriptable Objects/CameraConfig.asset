@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3a52a83b227f1742b2f96442ec96a34, type: 3}
   m_Name: CameraConfig
   m_EditorClassIdentifier: 
-  mouseSensitivityX: 150
-  mouseSensitivityY: 150
-  rotationSmoothTime: 0.3
+  mouseSensitivityX: 6
+  mouseSensitivityY: 6
+  rotationSmoothTime: 0.5
   pitchLimits: {x: 0, y: 0}
   defaultDistance: 10
   zoomLimits: {x: 3.5, y: 8}
