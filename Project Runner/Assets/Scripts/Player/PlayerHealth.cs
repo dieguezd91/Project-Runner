@@ -111,10 +111,21 @@ public class PlayerHealth : MonoBehaviour
     {
         if (attachmentManager == null || !attachmentManager.HasAttachedEnemies) return;
 
-        float decayRate = attachmentManager.GetShieldDecayRate(shieldDecayPerEnemy);
-        CurrentShield -= decayRate * Time.deltaTime;
+        // Usar el drain rate EXPONENCIAL
+        float drainRate = attachmentManager.GetShieldDrainRate();
+        CurrentShield -= drainRate * Time.deltaTime;
 
         if (CurrentShield < 0) CurrentShield = 0;
+    }
+
+    public void RecoverShield(float amount, string source = "Unknown")
+    {
+        if (IsDead) return;
+
+        CurrentShield = Mathf.Min(CurrentShield + amount, maxShield);
+        Debug.Log($"Shield recuperado: +{amount:F1} ({source}). Shield: {CurrentShield:F1}%");
+
+        OnShieldChanged?.Invoke(CurrentShield);
     }
 
     public void TakeDamage(float amount, string source = "Unknown")
@@ -207,25 +218,29 @@ public class PlayerHealth : MonoBehaviour
         {
             var debugInfo = attachmentManager.GetDebugInfo();
 
-            style.normal.textColor = Color.white;
-            GUILayout.Label($"Enemigos Pegados: {debugInfo.count}/10", style);
+            // Código de colores según peligro
+            Color warningColor = Color.white;
+            if (debugInfo.count >= 3) warningColor = Color.red;
+            else if (debugInfo.count >= 2) warningColor = Color.yellow;
+
+            style.normal.textColor = warningColor;
+            GUILayout.Label($"⚠ Enemigos Pegados: {debugInfo.count}/4", style);
 
             if (debugInfo.count > 0)
             {
-                style.normal.textColor = Color.magenta;
-                GUILayout.Label($"Masa Extra: +{debugInfo.mass:F1} kg", style);
-                GUILayout.Label($"Drag Extra: +{debugInfo.drag:F2}", style);
+                style.normal.textColor = Color.red;
+                GUILayout.Label($"DRAIN RATE: -{debugInfo.drainRate:F1}%/s", style);
 
-                float currentSpeed = locomotion.GetCurrentSpeed();
-                if (currentSpeed < 0.5f)
+                // Mostrar tiempo hasta muerte
+                if (debugInfo.drainRate > 0)
                 {
-                    style.normal.textColor = Color.red;
-                    GUILayout.Label($"⚠ STATIONARY: {debugInfo.stationaryTime:F2}s / 1.0s", style);
+                    float timeToZero = CurrentShield / debugInfo.drainRate;
+                    style.normal.textColor = timeToZero < 3f ? Color.red : Color.yellow;
+                    GUILayout.Label($"⏱ Time to death: {timeToZero:F1}s", style);
                 }
 
-                float decayRate = attachmentManager.GetShieldDecayRate(shieldDecayPerEnemy);
-                style.normal.textColor = Color.yellow;
-                GUILayout.Label($"Shield Decay: -{decayRate:F1}%/s", style);
+                style.normal.textColor = Color.magenta;
+                GUILayout.Label($"Masa Extra: +{debugInfo.mass:F1} kg", style);
             }
         }
 

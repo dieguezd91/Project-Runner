@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 1464458666843702912, guid: f5f75918d4b29484e9cb8ca6f6ce94a2, type: 3}
   spawnWeight: 1
-  moveSpeed: 5
+  moveSpeed: 10
   rotationSpeed: 10
   chaseRange: 50
   debugColor: {r: 1, g: 0, b: 0, a: 1}

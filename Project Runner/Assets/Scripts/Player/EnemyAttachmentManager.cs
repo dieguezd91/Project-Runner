@@ -1,195 +1,185 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Maneja el sistema de enemigos pegados al jugador (lastre).
-/// Responsabilidades: attachment, detachment, fÌsica del lastre, muerte por estacionario.
-/// </summary>
 public class EnemyAttachmentManager : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private int maxAttachedEnemies = 10;
-    [SerializeField] private float massPerEnemy = 10f;
-    [SerializeField] private float dragPerEnemy = 0.15f;
-    [SerializeField] private float stationaryTimeToDeathWithBallast = 1f;
-    [SerializeField] private float stationarySpeedThreshold = 0.5f;
-    
+    [SerializeField] private int maxAttachedEnemies = 4; // L√≠mite reducido
+    [SerializeField] private float massPerEnemy = 5f; // Reducido (menos impacto en velocidad)
+    [SerializeField] private float dragPerEnemy = 0.05f; // Reducido
+
+    [Header("Shield Drain (Exponencial)")]
+    [SerializeField]
+    private float[] shieldDrainPerEnemy = new float[]
+    {
+        0f,    // 0 enemigos
+        8f,    // 1 enemigo: -8%/s
+        20f,   // 2 enemigos: -20%/s
+        40f,   // 3 enemigos: -40%/s
+        100f   // 4 enemigos: MUERTE INSTANT√ÅNEA
+    };
+
+    [Header("Instant Death")]
+    [SerializeField] private int overwhelmThreshold = 4; // Muerte instant√°nea con 4 enemigos
+
     [Header("References")]
     private PlayerHealth playerHealth;
-    private PlayerLocomotion locomotion;
     private Rigidbody rb;
-    
+
     private List<Enemy> attachedEnemies = new List<Enemy>();
     private float baseMass;
     private float baseDrag;
-    private float stationaryTimer;
-    
+
     public int AttachedCount => attachedEnemies.Count;
     public bool HasAttachedEnemies => attachedEnemies.Count > 0;
-    
+
     private void Awake()
     {
         playerHealth = GetComponent<PlayerHealth>();
-        locomotion = GetComponent<PlayerLocomotion>();
         rb = GetComponent<Rigidbody>();
-        
+
         baseMass = rb.mass;
         baseDrag = rb.linearDamping;
     }
-    
+
     private void Update()
     {
         if (playerHealth.IsDead) return;
-        
-        CheckStationaryDeath();
+
+        CheckOverwhelmed();
     }
-    
-    /// <summary>
-    /// Intenta pegar un enemigo al jugador.
-    /// </summary>
+
     public bool TryAttachEnemy(Enemy enemy)
     {
         if (attachedEnemies.Count >= maxAttachedEnemies)
         {
-            Debug.LogWarning("M·ximo de enemigos pegados alcanzado!");
+            Debug.LogWarning("M√°ximo de enemigos pegados alcanzado!");
             return false;
         }
-        
+
         if (attachedEnemies.Contains(enemy))
         {
-            Debug.LogWarning("Este enemigo ya est· pegado!");
             return false;
         }
-        
-        // Pegar fÌsicamente
+
+        // Pegar f√≠sicamente
         enemy.transform.SetParent(transform);
-        
-        // Desactivar fÌsica del enemigo
+
+        // Desactivar f√≠sica del enemigo
         Rigidbody enemyRb = enemy.GetComponent<Rigidbody>();
         if (enemyRb != null)
         {
             enemyRb.isKinematic = true;
             enemyRb.linearVelocity = Vector3.zero;
         }
-        
+
         Collider enemyCollider = enemy.GetComponent<Collider>();
         if (enemyCollider != null)
         {
             enemyCollider.enabled = false;
         }
-        
-        // Cambiar color visual
+
+        // Cambiar color visual (m√°s rojo = m√°s peligro)
         Renderer renderer = enemy.GetComponentInChildren<Renderer>();
         if (renderer != null)
         {
-            renderer.material.color = Color.magenta;
+            Color dangerColor = Color.Lerp(Color.magenta, Color.red, attachedEnemies.Count / (float)maxAttachedEnemies);
+            renderer.material.color = dangerColor;
         }
-        
-        // Agregar a lista y actualizar fÌsica
+
+        // Agregar a lista y actualizar f√≠sica
         attachedEnemies.Add(enemy);
         UpdateBallastPhysics();
-        
-        Debug.Log($"Enemigo pegado! Total: {attachedEnemies.Count}");
-        
+
+        Debug.Log($"‚ö† Enemigo pegado! Total: {attachedEnemies.Count}/{maxAttachedEnemies}");
+
+        // Verificar muerte instant√°nea
+        if (attachedEnemies.Count >= overwhelmThreshold)
+        {
+            playerHealth.Die("OVERWHELMED BY THE SWARM!");
+        }
+
         return true;
     }
-    
-    /// <summary>
-    /// Despega un enemigo del jugador.
-    /// </summary>
+
     public void DetachEnemy(Enemy enemy)
     {
         if (!attachedEnemies.Contains(enemy))
         {
             return;
         }
-        
-        // Despegar fÌsicamente
+
         enemy.transform.SetParent(null);
-        
-        // Reactivar fÌsica
+
         Rigidbody enemyRb = enemy.GetComponent<Rigidbody>();
         if (enemyRb != null)
         {
             enemyRb.isKinematic = false;
         }
-        
+
         Collider enemyCollider = enemy.GetComponent<Collider>();
         if (enemyCollider != null)
         {
             enemyCollider.enabled = true;
         }
-        
-        // Remover de lista y actualizar fÌsica
+
         attachedEnemies.Remove(enemy);
         UpdateBallastPhysics();
-        
-        Debug.Log($"Enemigo despegado! Total: {attachedEnemies.Count}");
+
+        Debug.Log($"Enemigo despegado! Total: {attachedEnemies.Count}/{maxAttachedEnemies}");
     }
-    
-    /// <summary>
-    /// Despega todos los enemigos (˙til para habilidades como Stomp).
-    /// </summary>
+
     public void DetachAllEnemies()
     {
         List<Enemy> enemiesToDetach = new List<Enemy>(attachedEnemies);
-        
+
         foreach (var enemy in enemiesToDetach)
         {
             DetachEnemy(enemy);
+
+            // Destruir enemigo al sacarlo
+            Destroy(enemy.gameObject);
+        }
+
+        // REWARD: Recuperar shield por cada enemigo eliminado
+        if (playerHealth != null && enemiesToDetach.Count > 0)
+        {
+            float shieldRecovery = enemiesToDetach.Count * 20f; // 20% por enemigo
+            playerHealth.RecoverShield(shieldRecovery, "Enemies Eliminated");
         }
     }
-    
+
     private void UpdateBallastPhysics()
     {
         int count = attachedEnemies.Count;
         rb.mass = baseMass + (count * massPerEnemy);
         rb.linearDamping = baseDrag + (count * dragPerEnemy);
     }
-    
-    private void CheckStationaryDeath()
+
+    private void CheckOverwhelmed()
     {
-        if (attachedEnemies.Count == 0)
+        if (attachedEnemies.Count >= overwhelmThreshold && !playerHealth.IsDead)
         {
-            stationaryTimer = 0f;
-            return;
-        }
-        
-        float currentSpeed = locomotion.GetCurrentSpeed();
-        
-        if (currentSpeed < stationarySpeedThreshold)
-        {
-            stationaryTimer += Time.deltaTime;
-            
-            if (stationaryTimer >= stationaryTimeToDeathWithBallast)
-            {
-                playerHealth.Die("DEVORADO POR LA HORDA (velocidad 0 con lastre)");
-            }
-        }
-        else
-        {
-            stationaryTimer = 0f;
+            playerHealth.Die("OVERWHELMED BY THE SWARM!");
         }
     }
-    
+
     /// <summary>
-    /// Obtiene el decay rate actual de shield por lastre.
+    /// Obtiene el drain rate EXPONENCIAL actual.
     /// </summary>
-    public float GetShieldDecayRate(float decayPerEnemy)
+    public float GetShieldDrainRate()
     {
-        return attachedEnemies.Count * decayPerEnemy;
+        int count = Mathf.Clamp(attachedEnemies.Count, 0, shieldDrainPerEnemy.Length - 1);
+        return shieldDrainPerEnemy[count];
     }
-    
-    /// <summary>
-    /// InformaciÛn de debug para OnGUI.
-    /// </summary>
-    public (int count, float mass, float drag, float stationaryTime) GetDebugInfo()
+
+    public (int count, float mass, float drag, float drainRate) GetDebugInfo()
     {
         return (
             attachedEnemies.Count,
             rb.mass - baseMass,
             rb.linearDamping - baseDrag,
-            stationaryTimer
+            GetShieldDrainRate()
         );
     }
 }
