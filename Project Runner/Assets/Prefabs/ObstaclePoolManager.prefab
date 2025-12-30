@@ -49,6 +49,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9df04ef97de00f8428159d287a98de24, type: 2}
   - {fileID: 11400000, guid: a3bde8f919d4b7d45b0d472ea76465d7, type: 2}
   - {fileID: 11400000, guid: 90228bee846214f49bc9e94c09f3cba5, type: 2}
+  - {fileID: 11400000, guid: 1eaa8c4af206d3444a46b58cbd491e23, type: 2}
+  - {fileID: 11400000, guid: f58a66f5ae4a4fa4298152582e28db60, type: 2}
+  - {fileID: 11400000, guid: 9b316afa34e7b28479755b2e7f536d57, type: 2}
+  - {fileID: 11400000, guid: a4a42931051c54148867c3ff579d9dbc, type: 2}
+  - {fileID: 11400000, guid: acf667cf9545a4e48a592580d3bb2bae, type: 2}
+  - {fileID: 11400000, guid: c85a94a548d94a14488e953a2ec512eb, type: 2}
+  - {fileID: 11400000, guid: 071afcc00aa36ed45a094a5ece1aaadd, type: 2}
+  - {fileID: 11400000, guid: 20d94211eefa74f4cb6318ffc709c41e, type: 2}
+  - {fileID: 11400000, guid: 8be22cc9d29079a4ab4b56086d5bf47c, type: 2}
+  - {fileID: 11400000, guid: 5414a48524afcef4080bdbec05b3eb02, type: 2}
   initialPoolSizePerType: 10
   maxPoolSizePerType: 100
   showDebug: 0
