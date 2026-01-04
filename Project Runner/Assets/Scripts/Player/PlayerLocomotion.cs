@@ -16,7 +16,7 @@ public class PlayerLocomotion : MonoBehaviour
     public bool showDebugGUI = true;
 
     [Header("Abilities")]
-    private LegsAbility legsAbility;
+    private BackAbility legsAbility;
 
     private Rigidbody rb;
     private new Transform transform;
@@ -163,7 +163,7 @@ public class PlayerLocomotion : MonoBehaviour
         // NUEVO: No aplicar momentum si estamos haciendo dash
         if (legsAbility == null)
         {
-            legsAbility = GetComponent<LegsAbility>();
+            legsAbility = GetComponent<BackAbility>();
         }
 
         if (legsAbility != null && legsAbility.IsDashing)

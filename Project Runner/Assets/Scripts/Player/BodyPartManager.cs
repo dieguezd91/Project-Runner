@@ -60,23 +60,27 @@ public class BodyPartManager : MonoBehaviour
 
         switch (partData.partType)
         {
-            case BodyPartType.Legs:
-                ability = gameObject.AddComponent<LegsAbility>();
-                break;
-            case BodyPartType.Arms:
-                ability = gameObject.AddComponent<ArmsAbility>();
-                break;
-            case BodyPartType.Tail:
-                // ability = gameObject.AddComponent<TailAbility>();
-                Debug.Log("[BodyPartManager] Tail ability - Pendiente de implementación");
+            case BodyPartType.Back:
+                ability = gameObject.AddComponent<BackAbility>();
                 break;
             case BodyPartType.Head:
-                // ability = gameObject.AddComponent<HeadAbility>();
+                ability = gameObject.AddComponent<HeadAbility>();
+                break;
+            case BodyPartType.Cannon:
+                // ability = gameObject.AddComponent<CannonAbility>();
+                Debug.Log("[BodyPartManager] Cannon ability - Pendiente de implementación");
+                break;
+            case BodyPartType.Arms:
+                // ability = gameObject.AddComponent<ArmsAbility>();
                 Debug.Log("[BodyPartManager] Head ability - Pendiente de implementación");
                 break;
-            case BodyPartType.Torso:
-                // ability = gameObject.AddComponent<TorsoAbility>();
-                Debug.Log("[BodyPartManager] Torso ability - Pendiente de implementación");
+            case BodyPartType.Chest:
+                // ability = gameObject.AddComponent<ChestAbility>();
+                Debug.Log("[BodyPartManager] Chest ability - Pendiente de implementación");
+                break;
+            case BodyPartType.Legs:
+                // ability = gameObject.AddComponent<LegsAbility>();
+                Debug.Log("[BodyPartManager] Legs ability - Pendiente de implementación");
                 break;
         }
 

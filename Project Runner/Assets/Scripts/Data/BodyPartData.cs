@@ -53,7 +53,8 @@ public enum BodyPartType
 {
     Legs,    // Patas - Dash, Wall Jump
     Arms,    // Brazos - Stomp, Punch
-    Tail,    // Cola - Grapple, Swing
+    Back,    // Cola - Grapple, Swing
     Head,    // Cabeza - Visión mejorada, detección
-    Torso    // Torso - Shield, resistencia
+    Chest,    // Torso - Shield, resistencia
+    Cannon
 }

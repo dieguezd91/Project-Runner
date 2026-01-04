@@ -3,7 +3,7 @@ using UnityEngine;
 using static UnityEngine.InputSystem.Controls.AxisControl;
 using static UnityEngine.UIElements.UxmlAttributeDescription;
 
-public class LegsAbility : BodyPartAbility
+public class BackAbility : BodyPartAbility
 {
     [Header("Dash Settings")]
     private bool isDashing;

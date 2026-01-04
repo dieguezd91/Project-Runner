@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ArmsAbility : BodyPartAbility
+public class HeadAbility : BodyPartAbility
 {
     [Header("Stomp Settings")]
     private bool isStomping;

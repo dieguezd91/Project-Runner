@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 6657674255007007998}
   - component: {fileID: 2270010305055815634}
   - component: {fileID: 1708722919674507085}
-  - component: {fileID: 4833138750743703896}
+  - component: {fileID: 5664030834725744811}
   m_Layer: 0
-  m_Name: ArmsPickUp_prefab
+  m_Name: BackPickUp_prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -122,11 +122,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb323e6275e18344db3d18d66fa8e78a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  partData: {fileID: 11400000, guid: 74da291d2f6d2d84e8d7b4aa1caa7d21, type: 2}
+  partData: {fileID: 11400000, guid: 57a62e91d43ba9c4dab48b5a4b59516b, type: 2}
   rotationSpeed: 60
   bobSpeed: 2
   bobHeight: 0.3
---- !u!114 &4833138750743703896
+--- !u!114 &5664030834725744811
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -135,11 +135,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3829742510207074769}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 27f155d55f5ba16429a8d14966098548, type: 3}
+  m_Script: {fileID: 11500000, guid: ac66b4b34387710489af48c1db71eb5a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 256
-  showImpactRadius: 1
   showDebugGUI: 1
