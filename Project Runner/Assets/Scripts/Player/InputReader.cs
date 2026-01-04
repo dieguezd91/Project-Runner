@@ -10,6 +10,7 @@ public class InputReader : ScriptableObject, PlayerControls.IPlayerActions
     public event Action OnDriftPerformed;
     public event Action OnDriftCanceled;
     public event Action OnDashPerformed;
+    public event Action OnStompPerformed;
 
     public Vector2 MoveInput { get; private set; }
     public Vector2 LookInput { get; private set; }
@@ -46,5 +47,10 @@ public class InputReader : ScriptableObject, PlayerControls.IPlayerActions
     public void OnDash(InputAction.CallbackContext context)
     {
         if (context.performed) OnDashPerformed?.Invoke();
+    }
+
+    public void OnStomp(InputAction.CallbackContext context)
+    {
+        if (context.performed) OnStompPerformed?.Invoke();
     }
 }
