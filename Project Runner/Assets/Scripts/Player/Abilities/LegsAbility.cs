@@ -1,4 +1,7 @@
+using NUnit.Framework;
 using UnityEngine;
+using static UnityEngine.InputSystem.Controls.AxisControl;
+using static UnityEngine.UIElements.UxmlAttributeDescription;
 
 public class LegsAbility : BodyPartAbility
 {
@@ -9,16 +12,17 @@ public class LegsAbility : BodyPartAbility
 
     private InputReader inputReader;
 
+    [Header("Collision")]
+    private RigidbodyConstraints originalConstraints;
+
     [Header("Debug")]
     [SerializeField] private bool showDebugGUI = true;
 
     protected override void OnInitialize()
     {
-        // Obtener InputReader desde PlayerLocomotion
         PlayerLocomotion locomotion = GetComponent<PlayerLocomotion>();
         if (locomotion != null)
         {
-            // Usar reflexión para acceder al campo privado
             var field = typeof(PlayerLocomotion).GetField("inputReader",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
@@ -34,6 +38,9 @@ public class LegsAbility : BodyPartAbility
             return;
         }
 
+        // Guardar constraints originales
+        originalConstraints = rb.constraints;
+
         inputReader.OnDashPerformed += TryDash;
         Debug.Log("[LegsAbility] Dash habilitado - Presiona Shift para usarlo");
     }
@@ -43,6 +50,12 @@ public class LegsAbility : BodyPartAbility
         if (inputReader != null)
         {
             inputReader.OnDashPerformed -= TryDash;
+        }
+
+        // Restaurar constraints al destruir
+        if (rb != null)
+        {
+            rb.constraints = originalConstraints;
         }
     }
 
@@ -54,9 +67,26 @@ public class LegsAbility : BodyPartAbility
         }
     }
 
+    private void FixedUpdate()
+    {
+        if (isDashing)
+        {
+            // Mantener velocidad del dash constante
+            Vector3 dashVelocity = dashDirection * partData.dashForce;
+
+            // Mantener Y velocity solo para gravedad leve, no para colisiones
+            float currentYVelocity = rb.linearVelocity.y;
+
+            // Clampear Y para evitar que suba mucho por colisiones
+            currentYVelocity = Mathf.Clamp(currentYVelocity, -10f, 2f);
+
+            rb.linearVelocity = new Vector3(dashVelocity.x, currentYVelocity, dashVelocity.z);
+        }
+    }
+
     private void TryDash()
     {
-        Debug.Log("[LegsAbility] TryDash llamado"); // DEBUG
+        Debug.Log("[LegsAbility] TryDash llamado");
 
         if (!CanUseAbility())
         {
@@ -97,20 +127,46 @@ public class LegsAbility : BodyPartAbility
             dashDirection = transform.forward;
         }
 
-        Vector3 dashVelocity = dashDirection * partData.dashForce;
-        rb.linearVelocity = new Vector3(dashVelocity.x, rb.linearVelocity.y, dashVelocity.z);
-
         isDashing = true;
         dashEndTime = Time.time + partData.dashDuration;
 
+        // Reducir drag temporalmente para que el dash no se frene
+        rb.linearDamping = 0f;
+
         StartCooldown();
 
-        Debug.Log($"[LegsAbility] Dash ejecutado en dirección: {dashDirection}");
+        Debug.Log($"[LegsAbility] Dash ejecutado - Force: {partData.dashForce}, Dir: {dashDirection}");
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (isDashing)
+        {
+            // Detectar colisión con CUALQUIER objeto sólido, no solo "Obstacle"
+            // Verificar si la colisión es frontal (en la dirección del dash)
+            Vector3 collisionNormal = collision.contacts[0].normal;
+            float dotProduct = Vector3.Dot(dashDirection, -collisionNormal);
+
+            // Si la colisión es frontal (dot > 0.5), detener el dash
+            if (dotProduct > 0.5f)
+            {
+                Debug.Log($"[LegsAbility] Dash interrumpido por colisión frontal con {collision.gameObject.name}");
+
+                // Detener movimiento horizontal
+                rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+
+                EndDash();
+            }
+        }
     }
 
     private void EndDash()
     {
         isDashing = false;
+
+        // Restaurar drag original
+        rb.linearDamping = 0f; // O el valor que tengas configurado en el Rigidbody
+
         Debug.Log("[LegsAbility] Dash finalizado");
     }
 
