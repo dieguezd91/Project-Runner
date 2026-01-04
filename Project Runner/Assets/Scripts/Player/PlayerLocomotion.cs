@@ -15,6 +15,9 @@ public class PlayerLocomotion : MonoBehaviour
     [Header("Debug")]
     public bool showDebugGUI = true;
 
+    [Header("Abilities")]
+    private LegsAbility legsAbility;
+
     private Rigidbody rb;
     private new Transform transform;
 
@@ -157,6 +160,17 @@ public class PlayerLocomotion : MonoBehaviour
 
     private void ApplyMomentum()
     {
+        // NUEVO: No aplicar momentum si estamos haciendo dash
+        if (legsAbility == null)
+        {
+            legsAbility = GetComponent<LegsAbility>();
+        }
+
+        if (legsAbility != null && legsAbility.IsDashing)
+        {
+            return; // Salir temprano si estamos en dash
+        }
+
         Vector3 movementDirection = Vector3.zero;
 
         if (cameraTransform != null)

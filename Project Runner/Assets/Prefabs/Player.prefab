@@ -390,6 +390,7 @@ GameObject:
   - component: {fileID: 3278791950384423495}
   - component: {fileID: 3412328325973040220}
   - component: {fileID: 2647056474812330984}
+  - component: {fileID: 1073732973680760836}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -489,8 +490,13 @@ MonoBehaviour:
   maxAttachedEnemies: 10
   massPerEnemy: 10
   dragPerEnemy: 0.15
-  stationaryTimeToDeathWithBallast: 1
-  stationarySpeedThreshold: 0.5
+  shieldDrainPerEnemy:
+  - 0
+  - 8
+  - 20
+  - 40
+  - 100
+  overwhelmThreshold: 4
 --- !u!136 &3412328325973040220
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -541,6 +547,21 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!114 &1073732973680760836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2749647183928182145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb10cc320c7213b4ba0cf1d5e7814db6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  visualParent: {fileID: 6660822945240645772}
+  prototypeSpherePrefab: {fileID: 9013367697118747842, guid: f39b610a67f2b464db51b9f10a666753, type: 3}
+  showDebugGUI: 1
 --- !u!1 &3400527865651820697
 GameObject:
   m_ObjectHideFlags: 0
