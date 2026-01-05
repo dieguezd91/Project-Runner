@@ -12,10 +12,10 @@ GameObject:
   - component: {fileID: 5528884059366301453}
   - component: {fileID: 6657674255007007998}
   - component: {fileID: 2270010305055815634}
-  - component: {fileID: 1708722919674507085}
-  - component: {fileID: -7541214876738351915}
+  - component: {fileID: 253203915160063211}
+  - component: {fileID: 7655210065446926838}
   m_Layer: 0
-  m_Name: LegsPickUp_prefab
+  m_Name: ChestPickUp_prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -110,7 +110,20 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1708722919674507085
+--- !u!114 &253203915160063211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3829742510207074769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62491427d4815ff41ac9ef95000a8303, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  showDebugGUI: 1
+--- !u!114 &7655210065446926838
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -122,22 +135,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb323e6275e18344db3d18d66fa8e78a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  partData: {fileID: 11400000, guid: 7f70bfc8583d70245851fd37551d60f3, type: 2}
+  partData: {fileID: 11400000, guid: 746cb4fff09b06c469bd9d255db3d19c, type: 2}
   rotationSpeed: 60
   bobSpeed: 2
   bobHeight: 0.3
---- !u!114 &-7541214876738351915
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3829742510207074769}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8d77747fb69c69c489e7d8210b1fdc80, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  penaltyPerEnemy: 0.15
-  minimumJumpHeight: 1.5
-  showDebugGUI: 1

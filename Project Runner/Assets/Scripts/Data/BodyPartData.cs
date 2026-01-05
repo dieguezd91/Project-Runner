@@ -42,11 +42,15 @@ public class BodyPartData : ScriptableObject
     [Tooltip("Radio de deteccion aumentado")]
     public float detectionRadius = 15f;
 
-    [Header("Ability - chest")]
-    [Tooltip("Duracion del shield")]
-    public float shieldDuration = 3f;
-    [Tooltip("Cooldown del shield")]
-    public float shieldCooldown = 10f;
+    [Header("Habilidad - Chest (Double Jump)")]
+    [Tooltip("Fuerza del segundo salto")]
+    public float doubleJumpForce = 12f;
+    [Tooltip("Costo de energía del double jump")]
+    public float doubleJumpEnergyCost = 20f;
+    [Tooltip("Cooldown del double jump")]
+    public float doubleJumpCooldown = 3f;
+    [Tooltip("Multiplicador de conservación de velocidad horizontal en aire")]
+    public float airVelocityConservation = 1.0f; // 100% = sin pérdida
 
     [Header("Ability - Legs (Jump)")]
     [Tooltip("Fuerza del salto mejorado")]

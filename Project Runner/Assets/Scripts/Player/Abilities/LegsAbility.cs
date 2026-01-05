@@ -117,6 +117,12 @@ public class LegsAbility : BodyPartAbility
 
     private void Update()
     {
+        // CRITICAL: Verificar que playerLocomotion existe
+        if (playerLocomotion == null)
+        {
+            return;
+        }
+
         // Tracking de altura de salto
         if (isTracking)
         {
@@ -257,79 +263,79 @@ public class LegsAbility : BodyPartAbility
         return partData.cooldownDuration;
     }
 
-    private void OnGUI()
-    {
-        if (!showDebugGUI) return;
+    //private void OnGUI()
+    //{
+    //    if (!showDebugGUI) return;
 
-        GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-        boxStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.7f));
+    //    GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
+    //    boxStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.7f));
 
-        GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
-        labelStyle.fontSize = 14;
-        labelStyle.normal.textColor = Color.white;
-        labelStyle.fontStyle = FontStyle.Bold;
+    //    GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
+    //    labelStyle.fontSize = 14;
+    //    labelStyle.normal.textColor = Color.white;
+    //    labelStyle.fontStyle = FontStyle.Bold;
 
-        float panelWidth = 270f;
-        float panelHeight = 180f;
-        float padding = 10f;
+    //    float panelWidth = 270f;
+    //    float panelHeight = 180f;
+    //    float padding = 10f;
 
-        GUILayout.BeginArea(new Rect(Screen.width - panelWidth - padding, 430, panelWidth, panelHeight), boxStyle);
+    //    GUILayout.BeginArea(new Rect(Screen.width - panelWidth - padding, 430, panelWidth, panelHeight), boxStyle);
 
-        GUILayout.Label("=== LEGS ABILITY (JUMP) ===", labelStyle);
-        GUILayout.Space(5);
+    //    GUILayout.Label("=== LEGS ABILITY (JUMP) ===", labelStyle);
+    //    GUILayout.Space(5);
 
-        // Estado de salto
-        bool inAir = !playerLocomotion.IsGrounded();
-        labelStyle.normal.textColor = inAir ? Color.yellow : Color.white;
-        GUILayout.Label($"In Air: {(inAir ? "YES" : "NO")}", labelStyle);
+    //    // Estado de salto
+    //    bool inAir = !playerLocomotion.IsGrounded();
+    //    labelStyle.normal.textColor = inAir ? Color.yellow : Color.white;
+    //    GUILayout.Label($"In Air: {(inAir ? "YES" : "NO")}", labelStyle);
 
-        // Speed bonus
-        labelStyle.normal.textColor = Color.cyan;
-        GUILayout.Label($"Speed Bonus: +{((partData.speedBonus - 1f) * 100f):F0}%", labelStyle);
+    //    // Speed bonus
+    //    labelStyle.normal.textColor = Color.cyan;
+    //    GUILayout.Label($"Speed Bonus: +{((partData.speedBonus - 1f) * 100f):F0}%", labelStyle);
 
-        // Masa
-        labelStyle.normal.textColor = Color.white;
-        GUILayout.Label($"Mass: {rb.mass:F1}kg (base: {baseMass:F1}kg)", labelStyle);
+    //    // Masa
+    //    labelStyle.normal.textColor = Color.white;
+    //    GUILayout.Label($"Mass: {rb.mass:F1}kg (base: {baseMass:F1}kg)", labelStyle);
 
-        // Enemigos pegados y penalización
-        int attachedEnemies = GetAttachedEnemiesCount();
-        if (attachedEnemies > 0)
-        {
-            labelStyle.normal.textColor = Color.red;
-            GUILayout.Label($"Attached Enemies: {attachedEnemies}", labelStyle);
+    //    // Enemigos pegados y penalización
+    //    int attachedEnemies = GetAttachedEnemiesCount();
+    //    if (attachedEnemies > 0)
+    //    {
+    //        labelStyle.normal.textColor = Color.red;
+    //        GUILayout.Label($"Attached Enemies: {attachedEnemies}", labelStyle);
 
-            float penaltyMultiplier = 1f - (attachedEnemies * penaltyPerEnemy);
-            penaltyMultiplier = Mathf.Max(penaltyMultiplier, 0.4f);
-            float penalty = (1f - penaltyMultiplier) * 100f;
+    //        float penaltyMultiplier = 1f - (attachedEnemies * penaltyPerEnemy);
+    //        penaltyMultiplier = Mathf.Max(penaltyMultiplier, 0.4f);
+    //        float penalty = (1f - penaltyMultiplier) * 100f;
 
-            labelStyle.normal.textColor = Color.yellow;
-            GUILayout.Label($"Jump Power: {(penaltyMultiplier * 100f):F0}%", labelStyle);
-        }
+    //        labelStyle.normal.textColor = Color.yellow;
+    //        GUILayout.Label($"Jump Power: {(penaltyMultiplier * 100f):F0}%", labelStyle);
+    //    }
 
-        // Can jump
-        labelStyle.normal.textColor = canJump ? Color.green : Color.red;
-        GUILayout.Label($"Can Jump: {(canJump ? "YES" : "NO")}", labelStyle);
+    //    // Can jump
+    //    labelStyle.normal.textColor = canJump ? Color.green : Color.red;
+    //    GUILayout.Label($"Can Jump: {(canJump ? "YES" : "NO")}", labelStyle);
 
-        // Altura actual mientras está saltando
-        if (isTracking && rb.linearVelocity.y > 0)
-        {
-            labelStyle.normal.textColor = Color.cyan;
-            float currentHeight = transform.position.y - jumpStartHeight;
-            GUILayout.Label($"Height: {currentHeight:F2}m", labelStyle);
-        }
+    //    // Altura actual mientras está saltando
+    //    if (isTracking && rb.linearVelocity.y > 0)
+    //    {
+    //        labelStyle.normal.textColor = Color.cyan;
+    //        float currentHeight = transform.position.y - jumpStartHeight;
+    //        GUILayout.Label($"Height: {currentHeight:F2}m", labelStyle);
+    //    }
 
-        GUILayout.EndArea();
-    }
+    //    GUILayout.EndArea();
+    //}
 
-    private Texture2D MakeTex(int width, int height, Color col)
-    {
-        Color[] pix = new Color[width * height];
-        for (int i = 0; i < pix.Length; i++)
-            pix[i] = col;
+    //private Texture2D MakeTex(int width, int height, Color col)
+    //{
+    //    Color[] pix = new Color[width * height];
+    //    for (int i = 0; i < pix.Length; i++)
+    //        pix[i] = col;
 
-        Texture2D result = new Texture2D(width, height);
-        result.SetPixels(pix);
-        result.Apply();
-        return result;
-    }
+    //    Texture2D result = new Texture2D(width, height);
+    //    result.SetPixels(pix);
+    //    result.Apply();
+    //    return result;
+    //}
 }
