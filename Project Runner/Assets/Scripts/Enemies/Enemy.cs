@@ -133,7 +133,7 @@ public class Enemy : MonoBehaviour
 
     void Die()
     {
-        Debug.Log($"Enemy {config?.enemyName ?? name} murió");
+        Debug.Log($"Enemy {config?.enemyName ?? name} muriï¿½");
 
         if (currentChunk != null)
         {

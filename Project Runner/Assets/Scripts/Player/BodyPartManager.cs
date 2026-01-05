@@ -79,8 +79,7 @@ public class BodyPartManager : MonoBehaviour
                 Debug.Log("[BodyPartManager] Chest ability - Pendiente de implementación");
                 break;
             case BodyPartType.Legs:
-                // ability = gameObject.AddComponent<LegsAbility>();
-                Debug.Log("[BodyPartManager] Legs ability - Pendiente de implementación");
+                ability = gameObject.AddComponent<LegsAbility>();
                 break;
         }
 

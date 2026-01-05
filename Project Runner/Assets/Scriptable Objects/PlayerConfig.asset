@@ -18,7 +18,7 @@ MonoBehaviour:
   accelerationCurveStart: 2.5
   accelerationCurveEnd: 0.3
   rotationSpeed: 12
-  jumpForce: 15
+  jumpForce: 6
   jumpCutMultiplier: 0.5
   coyoteTime: 0.15
   jumpBufferTime: 0.1
