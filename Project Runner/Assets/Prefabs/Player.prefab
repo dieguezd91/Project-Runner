@@ -432,6 +432,7 @@ MonoBehaviour:
   driftController: {fileID: 1764443263640273933}
   cameraTransform: {fileID: 8923968049143583848}
   showDebugGUI: 1
+  speedPenaltyPerEnemy: 0.05
   inputReader: {fileID: 11400000, guid: c8db638a9d8b4af4d93c9273323aace1, type: 2}
 --- !u!114 &1764443263640273933
 MonoBehaviour:

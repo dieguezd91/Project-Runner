@@ -2,13 +2,19 @@ using UnityEngine;
 
 public class ChestAbility : BodyPartAbility
 {
-    [Header("Double Jump Settings")]
+    [Header("Weight Assistance (Always Active)")]
+    [Tooltip("Reducción de penalización por peso (0.5 = 50% menos penalización)")]
+    [SerializeField] private float weightAssistanceMultiplier = 0.5f;
+
+    [Header("Double Jump (Only with Legs)")]
     private int jumpsRemaining = 0;
-    private int maxAirJumps = 1; // Solo 1 doble salto (total 2 saltos)
+    private int maxAirJumps = 1;
     private bool hasDoubleJumped = false;
+    private bool doubleJumpEnabled = false; // Flag para saber si está habilitado
 
     private InputReader inputReader;
     private PlayerLocomotion locomotion;
+    private LegsAbility legsAbility; // Referencia para detectar si existe
 
     [Header("Air Control")]
     private float originalAirDrag = 0f;
@@ -21,6 +27,8 @@ public class ChestAbility : BodyPartAbility
     protected override void OnInitialize()
     {
         locomotion = GetComponent<PlayerLocomotion>();
+        legsAbility = GetComponent<LegsAbility>(); // Detectar si hay LegsAbility
+
         if (locomotion != null)
         {
             var field = typeof(PlayerLocomotion).GetField("inputReader",
@@ -38,23 +46,33 @@ public class ChestAbility : BodyPartAbility
             return;
         }
 
-        // Guardar drag original para restaurar
         originalAirDrag = rb.linearDamping;
 
-        // Suscribirse al evento de salto (comparte el mismo input)
-        inputReader.OnJumpPerformed += TryDoubleJump;
+        // Solo habilitar double jump si hay LegsAbility
+        if (legsAbility != null)
+        {
+            doubleJumpEnabled = true;
+            inputReader.OnJumpPerformed += TryDoubleJump;
+            Debug.Log("[ChestAbility] Double Jump HABILITADO (LegsAbility detectada)");
+        }
+        else
+        {
+            doubleJumpEnabled = false;
+            Debug.Log("[ChestAbility] Double Jump DESHABILITADO (sin LegsAbility)");
+        }
 
-        Debug.Log("[ChestAbility] Air Propellers habilitado - Double Jump + control aéreo mejorado activado");
+        Debug.Log($"[ChestAbility] Air Propellers habilitado | " +
+                 $"Weight Assistance: {weightAssistanceMultiplier * 100f}% | " +
+                 $"Double Jump: {(doubleJumpEnabled ? "Enabled" : "Disabled")}");
     }
 
     private void OnDestroy()
     {
-        if (inputReader != null)
+        if (inputReader != null && doubleJumpEnabled)
         {
             inputReader.OnJumpPerformed -= TryDoubleJump;
         }
 
-        // Restaurar drag original
         if (airControlActive)
         {
             rb.linearDamping = originalAirDrag;
@@ -63,14 +81,28 @@ public class ChestAbility : BodyPartAbility
 
     private void Update()
     {
-        // CRITICAL: Verificar que playerLocomotion existe
         if (playerLocomotion == null)
         {
             return;
         }
 
-        // Resetear saltos disponibles cuando tocamos el suelo
-        if (playerLocomotion.IsGrounded())
+        // Actualizar detección de LegsAbility (por si se añade después)
+        if (!doubleJumpEnabled && legsAbility == null)
+        {
+            legsAbility = GetComponent<LegsAbility>();
+            if (legsAbility != null)
+            {
+                doubleJumpEnabled = true;
+                if (inputReader != null)
+                {
+                    inputReader.OnJumpPerformed += TryDoubleJump;
+                    Debug.Log("[ChestAbility] Double Jump HABILITADO (LegsAbility adquirida)");
+                }
+            }
+        }
+
+        // Resetear saltos disponibles cuando tocamos el suelo (solo si double jump está habilitado)
+        if (doubleJumpEnabled && playerLocomotion.IsGrounded())
         {
             jumpsRemaining = maxAirJumps;
             hasDoubleJumped = false;
@@ -82,7 +114,7 @@ public class ChestAbility : BodyPartAbility
                 airControlActive = false;
             }
         }
-        else
+        else if (!playerLocomotion.IsGrounded())
         {
             // Bonus pasivo: reducir drag en aire para mantener velocidad horizontal
             if (!airControlActive)
@@ -91,14 +123,31 @@ public class ChestAbility : BodyPartAbility
                 airControlActive = true;
             }
         }
+        else if (playerLocomotion.IsGrounded() && airControlActive)
+        {
+            // Restaurar drag si estamos en suelo y no tenemos double jump
+            rb.linearDamping = originalAirDrag;
+            airControlActive = false;
+        }
     }
 
     private void TryDoubleJump()
     {
+        // Verificación crítica: solo funciona si double jump está habilitado
+        if (!doubleJumpEnabled)
+        {
+            return;
+        }
+
+        if (playerLocomotion == null)
+        {
+            return;
+        }
+
         // Solo intentar double jump si estamos en el aire
         if (playerLocomotion.IsGrounded())
         {
-            return; // El salto base lo maneja LegsAbility o PlayerLocomotion
+            return; // El salto base lo maneja LegsAbility
         }
 
         if (!CanUseAbility())
@@ -122,6 +171,17 @@ public class ChestAbility : BodyPartAbility
 
     protected override bool CheckCustomConditions()
     {
+        if (playerLocomotion == null)
+        {
+            return false;
+        }
+
+        // Verificar que double jump está habilitado
+        if (!doubleJumpEnabled)
+        {
+            return false;
+        }
+
         // Verificar que estamos en el aire
         if (playerLocomotion.IsGrounded())
         {
@@ -139,13 +199,13 @@ public class ChestAbility : BodyPartAbility
 
     private void ExecuteDoubleJump()
     {
-        // Guardar velocidad horizontal actual (la conservamos 100%)
+        // Guardar velocidad horizontal actual
         Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
 
-        // Cancelar velocidad vertical actual (permite saltar hacia arriba incluso si estamos cayendo)
+        // Cancelar velocidad vertical actual
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
 
-        // Aplicar impulso de double jump (menor que el salto base)
+        // Aplicar impulso de double jump
         rb.AddForce(Vector3.up * partData.doubleJumpForce, ForceMode.Impulse);
 
         // Consumir salto
@@ -162,98 +222,16 @@ public class ChestAbility : BodyPartAbility
                  $"Saltos restantes: {jumpsRemaining}");
     }
 
+    /// <summary>
+    /// Método público para que LegsAbility consulte el multiplicador de asistencia
+    /// </summary>
+    public float GetWeightAssistanceMultiplier()
+    {
+        return weightAssistanceMultiplier;
+    }
+
     protected override float GetCooldownDuration()
     {
         return partData.doubleJumpCooldown;
     }
-
-    //private void OnGUI()
-    //{
-    //    if (!showDebugGUI) return;
-
-    //    GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-    //    boxStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.7f));
-
-    //    GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
-    //    labelStyle.fontSize = 14;
-    //    labelStyle.normal.textColor = Color.white;
-    //    labelStyle.fontStyle = FontStyle.Bold;
-
-    //    float panelWidth = 270f;
-    //    float panelHeight = 160f;
-    //    float padding = 10f;
-
-    //    GUILayout.BeginArea(new Rect(Screen.width - panelWidth - padding, 640, panelWidth, panelHeight), boxStyle);
-
-    //    GUILayout.Label("=== CHEST ABILITY (DOUBLE JUMP) ===", labelStyle);
-    //    GUILayout.Space(5);
-
-    //    // Estado de aire
-    //    bool inAir = !playerLocomotion.IsGrounded();
-    //    labelStyle.normal.textColor = inAir ? Color.yellow : Color.white;
-    //    GUILayout.Label($"In Air: {(inAir ? "YES" : "NO")}", labelStyle);
-
-    //    // Bonus pasivo
-    //    labelStyle.normal.textColor = Color.cyan;
-    //    GUILayout.Label($"Air Control: {(partData.airVelocityConservation * 100f):F0}%", labelStyle);
-
-    //    // Saltos disponibles
-    //    if (inAir)
-    //    {
-    //        labelStyle.normal.textColor = jumpsRemaining > 0 ? Color.green : Color.red;
-    //        GUILayout.Label($"Jumps Available: {jumpsRemaining}/{maxAirJumps}", labelStyle);
-    //    }
-
-    //    // Cooldown
-    //    if (isOnCooldown)
-    //    {
-    //        labelStyle.normal.textColor = Color.red;
-    //        GUILayout.Label($"Cooldown: {GetRemainingCooldown():F1}s", labelStyle);
-    //        DrawProgressBar(GetCooldownProgress(), "Cooldown", Color.yellow);
-    //    }
-    //    else if (inAir && jumpsRemaining > 0)
-    //    {
-    //        labelStyle.normal.textColor = Color.green;
-    //        GUILayout.Label("Double Jump: READY", labelStyle);
-    //        DrawProgressBar(1f, "Ready", Color.green);
-    //    }
-
-    //    GUILayout.EndArea();
-    //}
-
-    //private void DrawProgressBar(float percent, string label, Color barColor)
-    //{
-    //    float barWidth = 250f;
-    //    float barHeight = 20f;
-
-    //    Rect backgroundRect = GUILayoutUtility.GetRect(barWidth, barHeight);
-
-    //    GUI.DrawTexture(backgroundRect, MakeTex(2, 2, new Color(0.2f, 0.2f, 0.2f, 0.8f)));
-
-    //    Rect fillRect = new Rect(
-    //        backgroundRect.x,
-    //        backgroundRect.y,
-    //        backgroundRect.width * Mathf.Clamp01(percent),
-    //        backgroundRect.height
-    //    );
-    //    GUI.DrawTexture(fillRect, MakeTex(2, 2, barColor));
-
-    //    GUIStyle percentStyle = new GUIStyle(GUI.skin.label);
-    //    percentStyle.alignment = TextAnchor.MiddleCenter;
-    //    percentStyle.fontStyle = FontStyle.Bold;
-    //    percentStyle.normal.textColor = Color.white;
-    //    GUI.Label(backgroundRect, $"{label}: {(percent * 100f):F0}%", percentStyle);
-    //}
-
-    //private Texture2D MakeTex(int width, int height, Color col)
-    //{
-    //    Color[] pix = new Color[width * height];
-    //    for (int i = 0; i < pix.Length; i++)
-    //        pix[i] = col;
-
-    //    Texture2D result = new Texture2D(width, height);
-    //    result.SetPixels(pix);
-    //    result.Apply();
-    //    return result;
-    //}
 }

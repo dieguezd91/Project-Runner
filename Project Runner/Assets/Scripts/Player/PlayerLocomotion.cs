@@ -18,6 +18,10 @@ public class PlayerLocomotion : MonoBehaviour
     [Header("Abilities")]
     private BackAbility legsAbility;
 
+    [Header("Enemy Weight Penalty")]
+    [Tooltip("Penalización de velocidad por cada enemigo pegado (0.15 = 15% por enemigo)")]
+    [SerializeField] private float speedPenaltyPerEnemy = 0.15f;
+
     private Rigidbody rb;
     private new Transform transform;
 
@@ -196,11 +200,16 @@ public class PlayerLocomotion : MonoBehaviour
             movementDirection = new Vector3(horizontalInput, 0, verticalInput).normalized;
         }
 
+        float baseMaxSpeed = GetAdjustedMaxSpeed(); // NUEVO: considera enemigos y chest
+
         // Obtener velocidad m�xima ajustada por boost de drift
-        float effectiveMaxSpeed = config.maxSpeed;
+        float effectiveMaxSpeed = baseMaxSpeed;
         if (driftController != null)
         {
-            effectiveMaxSpeed = driftController.GetBoostedMaxSpeed();
+            // GetBoostedMaxSpeed() devuelve config.maxSpeed * boostMultiplier
+            // Necesitamos aplicar el mismo multiplier pero sobre baseMaxSpeed
+            float boostMultiplier = driftController.GetBoostedMaxSpeed() / config.maxSpeed;
+            effectiveMaxSpeed = baseMaxSpeed * boostMultiplier;
         }
 
         // Calcular velocidad objetivo
@@ -319,123 +328,136 @@ public class PlayerLocomotion : MonoBehaviour
     public bool WasGrounded() => wasGrounded;
     public float GetCurrentSpeed() => currentHorizontalVelocity.magnitude;
 
-    //private void OnGUI()
-    //{
-    //    if (!showDebugGUI) return;
+    private void OnGUI()
+    {
+        if (!showDebugGUI) return;
 
-    //    GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
-    //    labelStyle.fontSize = 16;
-    //    labelStyle.normal.textColor = Color.white;
-    //    labelStyle.fontStyle = FontStyle.Bold;
+        GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
+        labelStyle.fontSize = 16;
+        labelStyle.normal.textColor = Color.white;
+        labelStyle.fontStyle = FontStyle.Bold;
 
-    //    GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-    //    boxStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.7f));
+        GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
+        boxStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.7f));
 
-    //    float panelWidth = 350f;
-    //    float panelHeight = 280f;
-    //    float padding = 10f;
+        float panelWidth = 350f;
+        float panelHeight = 280f;
+        float padding = 10f;
 
-    //    GUILayout.BeginArea(new Rect(padding, padding, panelWidth, panelHeight), boxStyle);
+        GUILayout.BeginArea(new Rect(padding, padding, panelWidth, panelHeight), boxStyle);
 
-    //    GUILayout.Label("=== PLAYER LOCOMOTION DEBUG ===", labelStyle);
-    //    GUILayout.Space(10);
+        GUILayout.Label("=== PLAYER LOCOMOTION DEBUG ===", labelStyle);
+        GUILayout.Space(10);
 
-    //    // Velocidad
-    //    float currentSpeed = currentHorizontalVelocity.magnitude;
+        // Velocidad
+        float currentSpeed = currentHorizontalVelocity.magnitude;
 
-    //    // Mostrar velocidad efectiva con boost
-    //    float effectiveMaxSpeed = config.maxSpeed;
-    //    if (driftController != null && driftController.IsBoostActive)
-    //    {
-    //        effectiveMaxSpeed = driftController.GetBoostedMaxSpeed();
-    //        labelStyle.normal.textColor = Color.yellow;
-    //    }
-    //    else
-    //    {
-    //        labelStyle.normal.textColor = GetSpeedColor(currentSpeed);
-    //    }
+        // Mostrar velocidad efectiva con boost
+        float effectiveMaxSpeed = config.maxSpeed;
+        if (driftController != null && driftController.IsBoostActive)
+        {
+            effectiveMaxSpeed = driftController.GetBoostedMaxSpeed();
+            labelStyle.normal.textColor = Color.yellow;
+        }
+        else
+        {
+            labelStyle.normal.textColor = GetSpeedColor(currentSpeed);
+        }
 
-    //    GUILayout.Label($"Speed: {currentSpeed:F2} / {effectiveMaxSpeed:F2} m/s", labelStyle);
+        GUILayout.Label($"Speed: {currentSpeed:F2} / {effectiveMaxSpeed:F2} m/s", labelStyle);
 
-    //    // Barra de velocidad
-    //    DrawProgressBar(currentSpeed / effectiveMaxSpeed, "Speed",
-    //        driftController != null && driftController.IsBoostActive ? Color.yellow : Color.cyan);
+        EnemyAttachmentManager attachmentManager = GetComponent<EnemyAttachmentManager>();
+        if (attachmentManager != null && attachmentManager.AttachedCount > 0)
+        {
+            float adjustedMaxSpeed = GetAdjustedMaxSpeed();
+            float speedReduction = ((config.maxSpeed - adjustedMaxSpeed) / config.maxSpeed) * 100f;
 
-    //    GUILayout.Space(5);
+            labelStyle.normal.textColor = Color.red;
+            GUILayout.Label($"Speed Penalty: -{speedReduction:F0}%", labelStyle);
 
-    //    // Porcentaje de velocidad
-    //    labelStyle.normal.textColor = Color.white;
-    //    GUILayout.Label($"Speed %: {(currentSpeedPercent * 100f):F1}%", labelStyle);
+            labelStyle.normal.textColor = Color.yellow;
+            GUILayout.Label($"Max Speed: {adjustedMaxSpeed:F1} m/s", labelStyle);
+        }
 
-    //    // Aceleraci�n actual
-    //    labelStyle.normal.textColor = accelerationRate > 0 ? Color.green : Color.gray;
-    //    GUILayout.Label($"Acceleration Rate: {accelerationRate:F2}", labelStyle);
+        // Barra de velocidad
+        DrawProgressBar(currentSpeed / effectiveMaxSpeed, "Speed",
+            driftController != null && driftController.IsBoostActive ? Color.yellow : Color.cyan);
 
-    //    // Barra de aceleraci�n
-    //    float accelPercent = Mathf.Clamp01(accelerationRate / (config.acceleration * config.accelerationCurveStart));
-    //    DrawProgressBar(accelPercent, "Accel", Color.green);
+        GUILayout.Space(5);
 
-    //    GUILayout.Space(5);
+        // Porcentaje de velocidad
+        labelStyle.normal.textColor = Color.white;
+        GUILayout.Label($"Speed %: {(currentSpeedPercent * 100f):F1}%", labelStyle);
 
-    //    // Input
-    //    labelStyle.normal.textColor = Color.yellow;
-    //    GUILayout.Label($"Input: H={horizontalInput:F2} V={verticalInput:F2}", labelStyle);
+        // Aceleraci�n actual
+        labelStyle.normal.textColor = accelerationRate > 0 ? Color.green : Color.gray;
+        GUILayout.Label($"Acceleration Rate: {accelerationRate:F2}", labelStyle);
 
-    //    // Estado
-    //    labelStyle.normal.textColor = isGrounded ? Color.green : Color.red;
-    //    GUILayout.Label($"Grounded: {(isGrounded ? "YES" : "NO")}", labelStyle);
+        // Barra de aceleraci�n
+        float accelPercent = Mathf.Clamp01(accelerationRate / (config.acceleration * config.accelerationCurveStart));
+        DrawProgressBar(accelPercent, "Accel", Color.green);
 
-    //    labelStyle.normal.textColor = Color.white;
-    //    GUILayout.Label($"Velocity Y: {rb.linearVelocity.y:F2}", labelStyle);
+        GUILayout.Space(5);
 
-    //    GUILayout.EndArea();
-    //}
+        // Input
+        labelStyle.normal.textColor = Color.yellow;
+        GUILayout.Label($"Input: H={horizontalInput:F2} V={verticalInput:F2}", labelStyle);
 
-    //private Color GetSpeedColor(float speed)
-    //{
-    //    float percent = speed / config.maxSpeed;
+        // Estado
+        labelStyle.normal.textColor = isGrounded ? Color.green : Color.red;
+        GUILayout.Label($"Grounded: {(isGrounded ? "YES" : "NO")}", labelStyle);
 
-    //    if (percent < 0.3f) return Color.red;
-    //    if (percent < 0.6f) return Color.yellow;
-    //    if (percent < 0.9f) return new Color(0.5f, 1f, 0.5f);
-    //    return Color.green;
-    //}
+        labelStyle.normal.textColor = Color.white;
+        GUILayout.Label($"Velocity Y: {rb.linearVelocity.y:F2}", labelStyle);
 
-    //private void DrawProgressBar(float percent, string label, Color barColor)
-    //{
-    //    float barWidth = 300f;
-    //    float barHeight = 20f;
+        GUILayout.EndArea();
+    }
 
-    //    Rect backgroundRect = GUILayoutUtility.GetRect(barWidth, barHeight);
+    private Color GetSpeedColor(float speed)
+    {
+        float percent = speed / config.maxSpeed;
 
-    //    GUI.DrawTexture(backgroundRect, MakeTex(2, 2, new Color(0.2f, 0.2f, 0.2f, 0.8f)));
+        if (percent < 0.3f) return Color.red;
+        if (percent < 0.6f) return Color.yellow;
+        if (percent < 0.9f) return new Color(0.5f, 1f, 0.5f);
+        return Color.green;
+    }
 
-    //    Rect fillRect = new Rect(
-    //        backgroundRect.x,
-    //        backgroundRect.y,
-    //        backgroundRect.width * Mathf.Clamp01(percent),
-    //        backgroundRect.height
-    //    );
-    //    GUI.DrawTexture(fillRect, MakeTex(2, 2, barColor));
+    private void DrawProgressBar(float percent, string label, Color barColor)
+    {
+        float barWidth = 300f;
+        float barHeight = 20f;
 
-    //    GUIStyle percentStyle = new GUIStyle(GUI.skin.label);
-    //    percentStyle.alignment = TextAnchor.MiddleCenter;
-    //    percentStyle.fontStyle = FontStyle.Bold;
-    //    percentStyle.normal.textColor = Color.white;
-    //    GUI.Label(backgroundRect, $"{label}: {(percent * 100f):F0}%", percentStyle);
-    //}
+        Rect backgroundRect = GUILayoutUtility.GetRect(barWidth, barHeight);
 
-    //private Texture2D MakeTex(int width, int height, Color col)
-    //{
-    //    Color[] pix = new Color[width * height];
-    //    for (int i = 0; i < pix.Length; i++)
-    //        pix[i] = col;
+        GUI.DrawTexture(backgroundRect, MakeTex(2, 2, new Color(0.2f, 0.2f, 0.2f, 0.8f)));
 
-    //    Texture2D result = new Texture2D(width, height);
-    //    result.SetPixels(pix);
-    //    result.Apply();
-    //    return result;
-    //}
+        Rect fillRect = new Rect(
+            backgroundRect.x,
+            backgroundRect.y,
+            backgroundRect.width * Mathf.Clamp01(percent),
+            backgroundRect.height
+        );
+        GUI.DrawTexture(fillRect, MakeTex(2, 2, barColor));
+
+        GUIStyle percentStyle = new GUIStyle(GUI.skin.label);
+        percentStyle.alignment = TextAnchor.MiddleCenter;
+        percentStyle.fontStyle = FontStyle.Bold;
+        percentStyle.normal.textColor = Color.white;
+        GUI.Label(backgroundRect, $"{label}: {(percent * 100f):F0}%", percentStyle);
+    }
+
+    private Texture2D MakeTex(int width, int height, Color col)
+    {
+        Color[] pix = new Color[width * height];
+        for (int i = 0; i < pix.Length; i++)
+            pix[i] = col;
+
+        Texture2D result = new Texture2D(width, height);
+        result.SetPixels(pix);
+        result.Apply();
+        return result;
+    }
 
     public void HandleJumpPerformed()
     {
@@ -449,6 +471,36 @@ public class PlayerLocomotion : MonoBehaviour
         {
             jumpCut = true;
         }
+    }
+
+    /// <summary>
+    /// Calcula la velocidad máxima ajustada considerando enemigos pegados y ChestAbility
+    /// </summary>
+    /// <summary>
+    /// Calcula la velocidad máxima ajustada considerando enemigos pegados y ChestAbility
+    /// </summary>
+    private float GetAdjustedMaxSpeed()
+    {
+        float targetMaxSpeed = config.maxSpeed;
+
+        EnemyAttachmentManager attachmentManager = GetComponent<EnemyAttachmentManager>();
+        if (attachmentManager != null && attachmentManager.AttachedCount > 0)
+        {
+            // Penalización base por enemigo (configurable desde Inspector)
+            float speedPenalty = attachmentManager.AttachedCount * speedPenaltyPerEnemy;
+
+            // Reducir penalización si hay ChestAbility
+            ChestAbility chestAbility = GetComponent<ChestAbility>();
+            if (chestAbility != null)
+            {
+                float weightAssistance = chestAbility.GetWeightAssistanceMultiplier();
+                speedPenalty *= (1f - weightAssistance);
+            }
+
+            targetMaxSpeed *= (1f - speedPenalty);
+        }
+
+        return targetMaxSpeed;
     }
 
     private void OnDrawGizmos()
