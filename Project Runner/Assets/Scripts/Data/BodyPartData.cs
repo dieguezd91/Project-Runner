@@ -38,9 +38,15 @@ public class BodyPartData : ScriptableObject
     [Tooltip("Velocidad de atracci�n del grapple")]
     public float grappleSpeed = 30f;
 
-    [Header("Ability - Arms")]
-    [Tooltip("Radio de deteccion aumentado")]
-    public float detectionRadius = 15f;
+    [Header("Habilidad - Arms (Destroy)")]
+    [Tooltip("Radio de detección para obstáculos destruibles")]
+    public float destroyDetectionRadius = 2f;
+    [Tooltip("Costo de energía del destroy")]
+    public float destroyEnergyCost = 15f;
+    [Tooltip("Cooldown del destroy")]
+    public float destroyCooldown = 2f;
+    [Tooltip("Porcentaje de velocidad mantenida al usar destroy y en colisiones (0.5 = 50%)")]
+    public float collisionSpeedRetention = 0.5f;
 
     [Header("Habilidad - Chest (Double Jump)")]
     [Tooltip("Fuerza del segundo salto")]

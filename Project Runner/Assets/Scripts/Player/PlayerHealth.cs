@@ -166,134 +166,154 @@ public class PlayerHealth : MonoBehaviour
 
             float damage = impactAngle < impactAngleThreshold ? frontalImpactDamage : lateralImpactDamage;
             TakeDamage(damage, "Obstáculo");
-        }
-    }
 
-    private void OnGUI()
-    {
-        if (!locomotion.showDebugGUI) return;
-
-        GUIStyle style = new GUIStyle(GUI.skin.label);
-        style.fontSize = 16;
-        style.fontStyle = FontStyle.Bold;
-
-        GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-        boxStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.7f));
-
-        float x = 370f;
-        float y = 10f;
-        float w = 350f;
-        float h = 320f;
-
-        GUILayout.BeginArea(new Rect(x, y, w, h), boxStyle);
-
-        style.normal.textColor = Color.white;
-        GUILayout.Label("=== PLAYER HEALTH DEBUG ===", style);
-        GUILayout.Space(10);
-
-        // SHIELD
-        style.normal.textColor = GetShieldColor(CurrentShield);
-        GUILayout.Label($"Kinetic Shield: {CurrentShield:F1}%", style);
-        DrawProgressBar(CurrentShield / maxShield, "Shield", style.normal.textColor);
-
-        GUILayout.Space(5);
-
-        // ENERGY
-        style.normal.textColor = Color.cyan;
-        GUILayout.Label($"Kinetic Energy: {CurrentEnergy:F1}", style);
-        DrawProgressBar(CurrentEnergy / maxEnergy, "Energy", Color.cyan);
-
-        GUILayout.Space(5);
-
-        // GRACE PERIOD
-        if (IsInGracePeriod)
-        {
-            style.normal.textColor = Color.red;
-            GUILayout.Label($"⚠ GRACE PERIOD: {gracePeriodTimer:F2}s ⚠", style);
-            GUILayout.Space(5);
-        }
-
-        // LASTRE (obtenido del AttachmentManager)
-        if (attachmentManager != null)
-        {
-            var debugInfo = attachmentManager.GetDebugInfo();
-
-            // Código de colores según peligro
-            Color warningColor = Color.white;
-            if (debugInfo.count >= 3) warningColor = Color.red;
-            else if (debugInfo.count >= 2) warningColor = Color.yellow;
-
-            style.normal.textColor = warningColor;
-            GUILayout.Label($"⚠ Enemigos Pegados: {debugInfo.count}/4", style);
-
-            if (debugInfo.count > 0)
+            // NUEVO: Aplicar bonus pasivo de ArmsAbility
+            ArmsAbility armsAbility = GetComponent<ArmsAbility>();
+            if (armsAbility != null)
             {
-                style.normal.textColor = Color.red;
-                GUILayout.Label($"DRAIN RATE: -{debugInfo.drainRate:F1}%/s", style);
-
-                // Mostrar tiempo hasta muerte
-                if (debugInfo.drainRate > 0)
+                Rigidbody rb = GetComponent<Rigidbody>();
+                if (rb != null)
                 {
-                    float timeToZero = CurrentShield / debugInfo.drainRate;
-                    style.normal.textColor = timeToZero < 3f ? Color.red : Color.yellow;
-                    GUILayout.Label($"⏱ Time to death: {timeToZero:F1}s", style);
-                }
+                    float retentionPercent = armsAbility.GetCollisionSpeedRetention();
+                    Vector3 currentVelocity = rb.linearVelocity;
+                    Vector3 retainedVelocity = new Vector3(
+                        currentVelocity.x * retentionPercent,
+                        currentVelocity.y,
+                        currentVelocity.z * retentionPercent
+                    );
+                    rb.linearVelocity = retainedVelocity;
 
-                style.normal.textColor = Color.magenta;
-                GUILayout.Label($"Masa Extra: +{debugInfo.mass:F1} kg", style);
+                    Debug.Log($"[ArmsAbility Passive] Velocidad retenida en colisión: {currentVelocity.magnitude:F2} → {retainedVelocity.magnitude:F2} m/s ({retentionPercent * 100f}%)");
+                }
             }
         }
-
-        GUILayout.Space(5);
-
-        // ESTADO
-        if (IsDead)
-        {
-            style.normal.textColor = Color.red;
-            style.fontSize = 20;
-            GUILayout.Label("☠ DEAD ☠", style);
-        }
-
-        GUILayout.EndArea();
     }
 
-    private Color GetShieldColor(float shield)
-    {
-        if (shield < 25f) return Color.red;
-        if (shield < 50f) return Color.yellow;
-        return Color.green;
-    }
+    //private void OnGUI()
+    //{
+    //    if (!locomotion.showDebugGUI) return;
 
-    private void DrawProgressBar(float percent, string label, Color barColor)
-    {
-        float barWidth = 300f;
-        float barHeight = 20f;
+    //    GUIStyle style = new GUIStyle(GUI.skin.label);
+    //    style.fontSize = 16;
+    //    style.fontStyle = FontStyle.Bold;
 
-        Rect backgroundRect = GUILayoutUtility.GetRect(barWidth, barHeight);
-        GUI.DrawTexture(backgroundRect, MakeTex(2, 2, new Color(0.2f, 0.2f, 0.2f, 0.8f)));
+    //    GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
+    //    boxStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.7f));
 
-        Rect fillRect = new Rect(
-            backgroundRect.x,
-            backgroundRect.y,
-            backgroundRect.width * Mathf.Clamp01(percent),
-            backgroundRect.height
-        );
-        GUI.DrawTexture(fillRect, MakeTex(2, 2, barColor));
+    //    float x = 370f;
+    //    float y = 10f;
+    //    float w = 350f;
+    //    float h = 320f;
 
-        GUIStyle percentStyle = new GUIStyle(GUI.skin.label);
-        percentStyle.alignment = TextAnchor.MiddleCenter;
-        percentStyle.fontStyle = FontStyle.Bold;
-        percentStyle.normal.textColor = Color.white;
-        GUI.Label(backgroundRect, $"{label}: {(percent * 100f):F0}%", percentStyle);
-    }
+    //    GUILayout.BeginArea(new Rect(x, y, w, h), boxStyle);
 
-    private Texture2D MakeTex(int width, int height, Color col)
-    {
-        Color[] pix = new Color[width * height];
-        for (int i = 0; i < pix.Length; i++) pix[i] = col;
-        Texture2D result = new Texture2D(width, height);
-        result.SetPixels(pix);
-        result.Apply();
-        return result;
-    }
+    //    style.normal.textColor = Color.white;
+    //    GUILayout.Label("=== PLAYER HEALTH DEBUG ===", style);
+    //    GUILayout.Space(10);
+
+    //    // SHIELD
+    //    style.normal.textColor = GetShieldColor(CurrentShield);
+    //    GUILayout.Label($"Kinetic Shield: {CurrentShield:F1}%", style);
+    //    DrawProgressBar(CurrentShield / maxShield, "Shield", style.normal.textColor);
+
+    //    GUILayout.Space(5);
+
+    //    // ENERGY
+    //    style.normal.textColor = Color.cyan;
+    //    GUILayout.Label($"Kinetic Energy: {CurrentEnergy:F1}", style);
+    //    DrawProgressBar(CurrentEnergy / maxEnergy, "Energy", Color.cyan);
+
+    //    GUILayout.Space(5);
+
+    //    // GRACE PERIOD
+    //    if (IsInGracePeriod)
+    //    {
+    //        style.normal.textColor = Color.red;
+    //        GUILayout.Label($"⚠ GRACE PERIOD: {gracePeriodTimer:F2}s ⚠", style);
+    //        GUILayout.Space(5);
+    //    }
+
+    //    // LASTRE (obtenido del AttachmentManager)
+    //    if (attachmentManager != null)
+    //    {
+    //        var debugInfo = attachmentManager.GetDebugInfo();
+
+    //        // Código de colores según peligro
+    //        Color warningColor = Color.white;
+    //        if (debugInfo.count >= 3) warningColor = Color.red;
+    //        else if (debugInfo.count >= 2) warningColor = Color.yellow;
+
+    //        style.normal.textColor = warningColor;
+    //        GUILayout.Label($"⚠ Enemigos Pegados: {debugInfo.count}/4", style);
+
+    //        if (debugInfo.count > 0)
+    //        {
+    //            style.normal.textColor = Color.red;
+    //            GUILayout.Label($"DRAIN RATE: -{debugInfo.drainRate:F1}%/s", style);
+
+    //            // Mostrar tiempo hasta muerte
+    //            if (debugInfo.drainRate > 0)
+    //            {
+    //                float timeToZero = CurrentShield / debugInfo.drainRate;
+    //                style.normal.textColor = timeToZero < 3f ? Color.red : Color.yellow;
+    //                GUILayout.Label($"⏱ Time to death: {timeToZero:F1}s", style);
+    //            }
+
+    //            style.normal.textColor = Color.magenta;
+    //            GUILayout.Label($"Masa Extra: +{debugInfo.mass:F1} kg", style);
+    //        }
+    //    }
+
+    //    GUILayout.Space(5);
+
+    //    // ESTADO
+    //    if (IsDead)
+    //    {
+    //        style.normal.textColor = Color.red;
+    //        style.fontSize = 20;
+    //        GUILayout.Label("☠ DEAD ☠", style);
+    //    }
+
+    //    GUILayout.EndArea();
+    //}
+
+    //private Color GetShieldColor(float shield)
+    //{
+    //    if (shield < 25f) return Color.red;
+    //    if (shield < 50f) return Color.yellow;
+    //    return Color.green;
+    //}
+
+    //private void DrawProgressBar(float percent, string label, Color barColor)
+    //{
+    //    float barWidth = 300f;
+    //    float barHeight = 20f;
+
+    //    Rect backgroundRect = GUILayoutUtility.GetRect(barWidth, barHeight);
+    //    GUI.DrawTexture(backgroundRect, MakeTex(2, 2, new Color(0.2f, 0.2f, 0.2f, 0.8f)));
+
+    //    Rect fillRect = new Rect(
+    //        backgroundRect.x,
+    //        backgroundRect.y,
+    //        backgroundRect.width * Mathf.Clamp01(percent),
+    //        backgroundRect.height
+    //    );
+    //    GUI.DrawTexture(fillRect, MakeTex(2, 2, barColor));
+
+    //    GUIStyle percentStyle = new GUIStyle(GUI.skin.label);
+    //    percentStyle.alignment = TextAnchor.MiddleCenter;
+    //    percentStyle.fontStyle = FontStyle.Bold;
+    //    percentStyle.normal.textColor = Color.white;
+    //    GUI.Label(backgroundRect, $"{label}: {(percent * 100f):F0}%", percentStyle);
+    //}
+
+    //private Texture2D MakeTex(int width, int height, Color col)
+    //{
+    //    Color[] pix = new Color[width * height];
+    //    for (int i = 0; i < pix.Length; i++) pix[i] = col;
+    //    Texture2D result = new Texture2D(width, height);
+    //    result.SetPixels(pix);
+    //    result.Apply();
+    //    return result;
+    //}
 }
