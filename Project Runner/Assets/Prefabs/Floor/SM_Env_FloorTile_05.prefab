@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 5293523809340700337}
   m_Layer: 3
   m_Name: SM_Env_FloorTile_05
-  m_TagString: Untagged
+  m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
