@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class DriftController : MonoBehaviour
@@ -6,6 +5,7 @@ public class DriftController : MonoBehaviour
     [Header("Referencias")]
     [SerializeField] private PlayerConfigSO config;
     [SerializeField] private Rigidbody rb;
+    [SerializeField] private InputReader inputReader;
 
     [Header("Visual Feedback")]
     [SerializeField] private MeshRenderer playerRenderer;
@@ -26,14 +26,14 @@ public class DriftController : MonoBehaviour
     private float boostEndTime;
     private float currentBoostMultiplier = 1f;
 
-    // Para detección mejorada
+    // Para detecciï¿½n mejorada
     private float driftTimer; // Tiempo continuo drifteando
 
     // Material para cambiar color
     private Material playerMaterial;
     private Color currentColor;
 
-    // Threshold mínimo para poder activar boost
+    // Threshold mï¿½nimo para poder activar boost
     private const float MIN_CHARGE_FOR_BOOST = 0.3f;
 
     public bool IsDrifting => isDrifting;
@@ -64,23 +64,22 @@ public class DriftController : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        if (inputReader != null)
+            inputReader.OnDashPerformed += TryActivateBoost;
+    }
+
+    private void OnDisable()
+    {
+        if (inputReader != null)
+            inputReader.OnDashPerformed -= TryActivateBoost;
+    }
+
     private void Update()
     {
         UpdateBoost();
-        HandleBoostInput();
         UpdateVisualFeedback();
-    }
-
-    /// <summary>
-    /// Detectar input para activar boost manualmente
-    /// </summary>
-    private void HandleBoostInput()
-    {
-        // Presionar Shift izquierdo para activar boost
-        if (Input.GetKeyDown(KeyCode.LeftShift))
-        {
-            TryActivateBoost();
-        }
     }
 
     /// <summary>
@@ -96,11 +95,11 @@ public class DriftController : MonoBehaviour
         {
             if (isBoostActive)
             {
-                Debug.Log("Boost ya está activo!");
+                Debug.Log("Boost ya estï¿½ activo!");
             }
             else
             {
-                Debug.Log($"Carga insuficiente: {(driftCharge * 100f):F0}% (mínimo {(MIN_CHARGE_FOR_BOOST * 100f):F0}%)");
+                Debug.Log($"Carga insuficiente: {(driftCharge * 100f):F0}% (mï¿½nimo {(MIN_CHARGE_FOR_BOOST * 100f):F0}%)");
             }
         }
     }
@@ -119,7 +118,7 @@ public class DriftController : MonoBehaviour
             // Color cyan brillante durante el boost
             targetColor = boostColor;
 
-            // ASEGURAR que el trail esté activo
+            // ASEGURAR que el trail estï¿½ activo
             if (boostTrail != null && !boostTrail.emitting)
             {
                 boostTrail.emitting = true;
@@ -127,7 +126,7 @@ public class DriftController : MonoBehaviour
         }
         else
         {
-            // ASEGURAR que el trail esté desactivado cuando no hay boost
+            // ASEGURAR que el trail estï¿½ desactivado cuando no hay boost
             if (boostTrail != null && boostTrail.emitting)
             {
                 boostTrail.emitting = false;
@@ -141,7 +140,7 @@ public class DriftController : MonoBehaviour
             }
             else if (isDrifting && driftCharge > 0.05f)
             {
-                // CARGANDO - Transición gradual de blanco a amarillo
+                // CARGANDO - Transiciï¿½n gradual de blanco a amarillo
                 targetColor = Color.Lerp(normalColor, chargingColor, driftCharge / MIN_CHARGE_FOR_BOOST);
             }
             else
@@ -151,8 +150,8 @@ public class DriftController : MonoBehaviour
             }
         }
 
-        // Transición suave de color
-        // Más rápido cuando entra/sale de boost, más lento en otros casos
+        // Transiciï¿½n suave de color
+        // Mï¿½s rï¿½pido cuando entra/sale de boost, mï¿½s lento en otros casos
         float lerpSpeed = isBoostActive || driftCharge >= MIN_CHARGE_FOR_BOOST ? 12f : 6f;
         currentColor = Color.Lerp(currentColor, targetColor, Time.deltaTime * lerpSpeed);
         playerMaterial.color = currentColor;
@@ -203,14 +202,14 @@ public class DriftController : MonoBehaviour
         }
         else
         {
-            // YA NO activamos boost automáticamente aquí
+            // YA NO activamos boost automï¿½ticamente aquï¿½
             // El jugador debe presionar Shift para activarlo
 
             if (isDrifting)
             {
                 if (showDebug)
                 {
-                    Debug.Log($"Drift terminado. Carga: {(driftCharge * 100f):F0}%. Presiona SHIFT para boost!");
+                    Debug.Log($"Drift terminado. Carga: {(driftCharge * 100f):F0}%. Presiona [Dash] para boost!");
                 }
                 EndDrift();
             }
@@ -254,8 +253,8 @@ public class DriftController : MonoBehaviour
 
     private void DischargeDrift()
     {
-        // Descargar más lentamente para dar tiempo a activar el boost
-        driftCharge -= config.driftDischargeRate * Time.fixedDeltaTime * 0.5f; // 50% más lento
+        // Descargar mï¿½s lentamente para dar tiempo a activar el boost
+        driftCharge -= config.driftDischargeRate * Time.fixedDeltaTime * 0.5f; // 50% mï¿½s lento
         driftCharge = Mathf.Max(0f, driftCharge);
     }
 
@@ -270,7 +269,7 @@ public class DriftController : MonoBehaviour
         // Resetear carga
         driftCharge = 0f;
 
-        // ACTIVAR trail EXPLÍCITAMENTE
+        // ACTIVAR trail EXPLï¿½CITAMENTE
         if (boostTrail != null)
         {
             boostTrail.Clear(); // Limpiar trail anterior
@@ -290,7 +289,7 @@ public class DriftController : MonoBehaviour
             isBoostActive = false;
             currentBoostMultiplier = 1f;
 
-            // DESACTIVAR trail EXPLÍCITAMENTE
+            // DESACTIVAR trail EXPLï¿½CITAMENTE
             if (boostTrail != null)
             {
                 boostTrail.emitting = false;
@@ -362,11 +361,11 @@ public class DriftController : MonoBehaviour
         GUI.Label(new Rect(x + 10, y, w - 20, h), $"Drift Charge: {(driftCharge * 100f):F0}%", style);
         y += h;
 
-        // BARRA DE CARGA con indicador de mínimo
+        // BARRA DE CARGA con indicador de mï¿½nimo
         DrawSimpleBar(x + 10, y, w - 20, 22f, driftCharge,
             driftCharge >= MIN_CHARGE_FOR_BOOST ? Color.yellow : Color.magenta);
 
-        // Línea indicadora del mínimo
+        // Lï¿½nea indicadora del mï¿½nimo
         float minLineX = x + 10 + (w - 20) * MIN_CHARGE_FOR_BOOST;
         GUI.DrawTexture(new Rect(minLineX, y, 2f, 22f), Texture2D.whiteTexture,
             ScaleMode.StretchToFill, true, 0, Color.green, 0, 0);
@@ -385,7 +384,7 @@ public class DriftController : MonoBehaviour
         {
             style.normal.textColor = CanActivateBoost ? Color.yellow : Color.gray;
             string boostMsg = CanActivateBoost ?
-                "Press LEFT SHIFT to BOOST!" :
+                "Press [Dash] to BOOST!" :
                 $"Boost: {((MIN_CHARGE_FOR_BOOST - driftCharge) * 100f):F0}% needed";
             GUI.Label(new Rect(x + 10, y, w - 20, h), boostMsg, style);
         }
@@ -395,7 +394,7 @@ public class DriftController : MonoBehaviour
         style.fontSize = 12;
         style.normal.textColor = new Color(1f, 1f, 0.5f);
         GUI.Label(new Rect(x + 10, y, w - 20, h * 2),
-            "Tip: Gira bruscamente para cargar.\n¡Presiona SHIFT cuando esté listo!", style);
+            "Tip: Gira bruscamente para cargar.\nÂ¡Presiona [Dash] cuando estÃ© listo!", style);
     }
 
     private void DrawSimpleBar(float x, float y, float w, float h, float fill, Color col)

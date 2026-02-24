@@ -448,6 +448,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 126bc874e76539f4fbf8f67adad54f9b, type: 2}
   rb: {fileID: 2647056474812330984}
+  inputReader: {fileID: 11400000, guid: c8db638a9d8b4af4d93c9273323aace1, type: 2}
   playerRenderer: {fileID: 688060299804429293}
   boostTrail: {fileID: 2954472173072540167}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
@@ -506,7 +507,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2749647183928182145}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 730c3dae060d26f4393837a936f2e079, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
