@@ -36,6 +36,8 @@ public class PlayerLocomotion : MonoBehaviour
     private float lastGroundedTime;
     private bool jumpRequested;
     private bool jumpCut;
+    // Buffers para ejecutar física SIEMPRE en FixedUpdate — nunca desde Update
+    private bool _pendingJump;
 
     private float horizontalInput;
     private float verticalInput;
@@ -110,26 +112,11 @@ public class PlayerLocomotion : MonoBehaviour
     {
         if (Time.timeScale == 0f) return;
 
+        if (_pendingJump) { ExecuteJump(); _pendingJump = false; }
+        ApplyJumpCut();
         ApplyMomentum();
         ApplyGravity();
     }
-
-    //private void ReadInput()
-    //{
-    //    horizontalInput = Input.GetAxisRaw("Horizontal");
-    //    verticalInput = Input.GetAxisRaw("Vertical");
-
-    //    if (Input.GetButtonDown("Jump"))
-    //    {
-    //        jumpRequested = true;
-    //        lastJumpTime = Time.time;
-    //    }
-
-    //    if (Input.GetButtonUp("Jump") && rb.linearVelocity.y > 0)
-    //    {
-    //        jumpCut = true;
-    //    }
-    //}
 
     private void ReadInput()
     {
@@ -163,18 +150,8 @@ public class PlayerLocomotion : MonoBehaviour
 
         if (jumpRequested && jumpInBuffer && (isGrounded || canUseCoyoteTime))
         {
-            ExecuteJump();
+            _pendingJump = true;
             jumpRequested = false;
-        }
-
-        if (jumpCut && rb.linearVelocity.y > 0)
-        {
-            rb.linearVelocity = new Vector3(
-                rb.linearVelocity.x,
-                rb.linearVelocity.y * config.jumpCutMultiplier,
-                rb.linearVelocity.z
-            );
-            jumpCut = false;
         }
     }
 
@@ -188,7 +165,7 @@ public class PlayerLocomotion : MonoBehaviour
         }
 
         Debug.Log($"[PlayerLocomotion] Ejecutando salto base - Fuerza: {config.jumpForce}");
-        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+        rb.AddForce(new Vector3(0f, -rb.linearVelocity.y, 0f), ForceMode.VelocityChange);
         rb.AddForce(Vector3.up * config.jumpForce, ForceMode.Impulse);
         lastGroundedTime = 0;
     }
@@ -262,65 +239,65 @@ public class PlayerLocomotion : MonoBehaviour
             driftController.UpdateDrift(currentHorizontalVelocity, movementDirection, isGrounded);
         }
 
-        // Calcular diferencia de velocidad
-        Vector3 velocityDifference = targetHorizontalVelocity - currentHorizontalVelocity;
-        float velocityDifferenceLength = velocityDifference.magnitude;
+        // Obtener multiplicador de friccion del drift
+        float frictionMultiplier = driftController != null ? driftController.GetFrictionMultiplier() : 1f;
 
-        // Obtener multiplicador de fricci�n del drift
-        float frictionMultiplier = 1f;
-        if (driftController != null)
-        {
-            frictionMultiplier = driftController.GetFrictionMultiplier();
-        }
-
-        // Aplicar fricci�n cuando no hay input
         if (movementDirection.magnitude < 0.1f && isGrounded)
         {
-            // Fricci�n ajustada por drift
+            // Friccion: fuerza opuesta a la velocidad horizontal actual
             float effectiveFriction = config.friction * frictionMultiplier;
-
-            currentHorizontalVelocity = Vector3.Lerp(
-                currentHorizontalVelocity,
-                Vector3.zero,
-                effectiveFriction * Time.fixedDeltaTime
-            );
+            rb.AddForce(-currentHorizontalVelocity * effectiveFriction, ForceMode.Acceleration);
             accelerationRate = 0f;
         }
-        else if (velocityDifferenceLength > 0.01f)
+        else if (movementDirection.magnitude >= 0.1f)
         {
-            // Sistema de aceleraci�n mejorado
-            float currentSpeed = currentHorizontalVelocity.magnitude;
-            currentSpeedPercent = currentSpeed / effectiveMaxSpeed;
+            // Proyeccion de velocidad: acumular solo en la direccion deseada
+            float speedInDesiredDir = Vector3.Dot(currentHorizontalVelocity, movementDirection);
+            float remainingSpeed = effectiveMaxSpeed - speedInDesiredDir;
 
-            // Aceleraci�n con curva personalizada
-            float accelerationFactor = GetAccelerationFactor(currentSpeedPercent);
-
-            // Calcular la tasa de aceleraci�n
-            accelerationRate = accelerationFactor * config.acceleration;
-
-            // Durante drift, reducir ligeramente la aceleraci�n para mantener el slide
-            if (driftController != null && driftController.IsDrifting)
+            if (remainingSpeed > 0f)
             {
-                accelerationRate *= 0.8f; // 20% menos aceleraci�n durante drift
+                float currentSpeed = currentHorizontalVelocity.magnitude;
+                currentSpeedPercent = effectiveMaxSpeed > 0f ? currentSpeed / effectiveMaxSpeed : 0f;
+
+                float accelerationFactor = GetAccelerationFactor(currentSpeedPercent);
+                accelerationRate = accelerationFactor * config.acceleration;
+
+                if (driftController != null && driftController.IsDrifting)
+                    accelerationRate *= 0.8f;
+
+                // Limitar la fuerza para no superar la velocidad restante en este frame
+                float forceToApply = Mathf.Min(accelerationRate, remainingSpeed / Time.fixedDeltaTime);
+                rb.AddForce(movementDirection * forceToApply, ForceMode.Acceleration);
             }
-
-            // Aplicar aceleraci�n directamente a la velocidad
-            Vector3 accelerationVector = movementDirection * accelerationRate * Time.fixedDeltaTime;
-            currentHorizontalVelocity += accelerationVector;
-
-            // Limitar a velocidad m�xima efectiva
-            if (currentHorizontalVelocity.magnitude > effectiveMaxSpeed)
+            else
             {
-                currentHorizontalVelocity = currentHorizontalVelocity.normalized * effectiveMaxSpeed;
+                accelerationRate = 0f;
             }
         }
 
-        // Aplicar velocidad horizontal al rigidbody
-        rb.linearVelocity = new Vector3(
-            currentHorizontalVelocity.x,
-            rb.linearVelocity.y,
-            currentHorizontalVelocity.z
-        );
+        // Cap suave: frena el exceso sin cortar knockbacks bruscamente
+        ApplySoftSpeedCap(effectiveMaxSpeed);
+    }
+
+    private void ApplyJumpCut()
+    {
+        if (!jumpCut || rb.linearVelocity.y <= 0f) return;
+
+        float targetY = rb.linearVelocity.y * config.jumpCutMultiplier;
+        rb.AddForce(new Vector3(0f, targetY - rb.linearVelocity.y, 0f), ForceMode.VelocityChange);
+        jumpCut = false;
+    }
+
+    private void ApplySoftSpeedCap(float maxSpeed)
+    {
+        Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        float horizontalSpeed = horizontalVel.magnitude;
+        if (horizontalSpeed > maxSpeed * 1.05f)
+        {
+            float excess = horizontalSpeed - maxSpeed;
+            rb.AddForce(-horizontalVel.normalized * excess * config.friction, ForceMode.Acceleration);
+        }
     }
 
     private float GetAccelerationFactor(float speedPercent)
