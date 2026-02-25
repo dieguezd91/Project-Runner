@@ -6,8 +6,7 @@ public class LegsAbility : BodyPartAbility
     private bool canJump = true;
     private float lastJumpTime;
 
-    private InputReader inputReader;
-    private PlayerLocomotion locomotion;
+    private EnemyAttachmentManager _attachmentManager;
 
     [Header("Speed Bonus")]
     private float originalMaxSpeed;
@@ -32,46 +31,31 @@ public class LegsAbility : BodyPartAbility
 
     protected override void OnInitialize()
     {
-        locomotion = GetComponent<PlayerLocomotion>();
-        if (locomotion != null)
-        {
-            // Guardar masa base del rigidbody
-            baseMass = rb.mass;
-
-            var field = typeof(PlayerLocomotion).GetField("inputReader",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (field != null)
-            {
-                inputReader = field.GetValue(locomotion) as InputReader;
-            }
-
-            // Guardar velocidad máxima original
-            if (locomotion.config != null)
-            {
-                originalMaxSpeed = locomotion.config.maxSpeed;
-                ApplySpeedBonus(locomotion);
-            }
-
-            // Desuscribir PlayerLocomotion del evento de salto
-            if (inputReader != null)
-            {
-                inputReader.OnJumpPerformed -= locomotion.HandleJumpPerformed;
-                inputReader.OnJumpCanceled -= locomotion.HandleJumpCanceled;
-                Debug.Log("[LegsAbility] PlayerLocomotion desuscrito del salto base");
-            }
-        }
-
+        // inputReader inyectado por BodyPartManager via base.Initialize() — sin reflection
+        // playerLocomotion cacheado por la base class
         if (inputReader == null)
         {
-            Debug.LogError("[LegsAbility] No se pudo obtener InputReader");
+            Debug.LogError("[LegsAbility] InputReader no fue inyectado. Asigna el InputReader en BodyPartManager.");
             return;
         }
 
-        // Suscribirse al evento de salto
+        _attachmentManager = GetComponent<EnemyAttachmentManager>();
+        baseMass = rb.mass;
+
+        if (playerLocomotion != null && playerLocomotion.config != null)
+        {
+            originalMaxSpeed = playerLocomotion.config.maxSpeed;
+            ApplySpeedBonus(playerLocomotion);
+        }
+
+        // Ceder el control del salto base a esta ability
+        inputReader.OnJumpPerformed -= playerLocomotion.HandleJumpPerformed;
+        inputReader.OnJumpCanceled  -= playerLocomotion.HandleJumpCanceled;
+        Debug.Log("[LegsAbility] PlayerLocomotion desuscrito del salto base");
+
         inputReader.OnJumpPerformed += TryJump;
 
-        Debug.Log($"[LegsAbility] Hydraulic Legs habilitado | Masa base: {baseMass}kg | Salto mejorado activado");
+        Debug.Log($"[LegsAbility] Hydraulic Legs habilitado | Masa base: {baseMass}kg");
     }
 
     private void OnDestroy()
@@ -80,16 +64,14 @@ public class LegsAbility : BodyPartAbility
         {
             inputReader.OnJumpPerformed -= TryJump;
 
-            // Re-suscribir PlayerLocomotion cuando se destruye LegsAbility
-            if (locomotion != null)
+            if (playerLocomotion != null)
             {
-                inputReader.OnJumpPerformed += locomotion.HandleJumpPerformed;
-                inputReader.OnJumpCanceled += locomotion.HandleJumpCanceled;
+                inputReader.OnJumpPerformed += playerLocomotion.HandleJumpPerformed;
+                inputReader.OnJumpCanceled  += playerLocomotion.HandleJumpCanceled;
                 Debug.Log("[LegsAbility] PlayerLocomotion re-suscrito al salto base");
             }
         }
 
-        // Restaurar velocidad original
         RemoveSpeedBonus();
     }
 
@@ -99,19 +81,17 @@ public class LegsAbility : BodyPartAbility
         {
             loco.config.maxSpeed = originalMaxSpeed * partData.speedBonus;
             speedBonusApplied = true;
-
             Debug.Log($"[LegsAbility] Speed bonus aplicado: {originalMaxSpeed} → {loco.config.maxSpeed}");
         }
     }
 
     private void RemoveSpeedBonus()
     {
-        if (locomotion != null && locomotion.config != null && speedBonusApplied)
+        if (playerLocomotion != null && playerLocomotion.config != null && speedBonusApplied)
         {
-            locomotion.config.maxSpeed = originalMaxSpeed;
+            playerLocomotion.config.maxSpeed = originalMaxSpeed;
             speedBonusApplied = false;
-
-            Debug.Log($"[LegsAbility] Speed bonus removido");
+            Debug.Log("[LegsAbility] Speed bonus removido");
         }
     }
 
@@ -192,13 +172,7 @@ public class LegsAbility : BodyPartAbility
 
     private int GetAttachedEnemiesCount()
     {
-        EnemyAttachmentManager attachmentManager = GetComponent<EnemyAttachmentManager>();
-        if (attachmentManager != null)
-        {
-            return attachmentManager.AttachedCount;
-        }
-
-        return 0;
+        return _attachmentManager != null ? _attachmentManager.AttachedCount : 0;
     }
 
     private void ExecuteJump()

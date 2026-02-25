@@ -15,8 +15,13 @@ public class PlayerLocomotion : MonoBehaviour
     [Header("Debug")]
     public bool showDebugGUI = true;
 
-    [Header("Abilities")]
-    private BackAbility legsAbility;
+    // Caches de abilities dinámicas — se refrescan via OnPartCollected, nunca en Update/FixedUpdate
+    private BackAbility  _backAbility;
+    private ChestAbility _chestAbility;
+    private LegsAbility  _legsAbility;
+
+    // Caches de componentes estáticos — cacheados en Awake
+    private EnemyAttachmentManager _attachmentManager;
 
     [Header("Enemy Weight Penalty")]
     [Tooltip("Penalización de velocidad por cada enemigo pegado (0.15 = 15% por enemigo)")]
@@ -45,33 +50,51 @@ public class PlayerLocomotion : MonoBehaviour
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
-        transform = GetComponent<Transform>();
+        rb                 = GetComponent<Rigidbody>();
+        transform          = GetComponent<Transform>();
+        _attachmentManager = GetComponent<EnemyAttachmentManager>();
 
-        // Obtener DriftController si no est� asignado
         if (driftController == null)
-        {
             driftController = GetComponent<DriftController>();
-        }
 
         if (cameraTransform == null && Camera.main != null)
-        {
             cameraTransform = Camera.main.transform;
-        }
+    }
+
+    private void Start()
+    {
+        // Las abilities se añaden con AddComponent en runtime — refrescar cache por evento
+        if (BodyPartManager.Instance != null)
+            BodyPartManager.Instance.OnPartCollected += OnAbilityPartCollected;
     }
 
     private void OnEnable()
     {
-        // Suscribir eventos de salto
         inputReader.OnJumpPerformed += HandleJumpPerformed;
-        inputReader.OnJumpCanceled += HandleJumpCanceled;
+        inputReader.OnJumpCanceled  += HandleJumpCanceled;
     }
 
     private void OnDisable()
     {
-        // Desuscribir para evitar errores
         inputReader.OnJumpPerformed -= HandleJumpPerformed;
-        inputReader.OnJumpCanceled -= HandleJumpCanceled;
+        inputReader.OnJumpCanceled  -= HandleJumpCanceled;
+    }
+
+    private void OnDestroy()
+    {
+        if (BodyPartManager.Instance != null)
+            BodyPartManager.Instance.OnPartCollected -= OnAbilityPartCollected;
+    }
+
+    // Llamado una sola vez cuando el jugador recoge una parte — no polling
+    private void OnAbilityPartCollected(BodyPartType type)
+    {
+        switch (type)
+        {
+            case BodyPartType.Back:  _backAbility  = GetComponent<BackAbility>();  break;
+            case BodyPartType.Chest: _chestAbility = GetComponent<ChestAbility>(); break;
+            case BodyPartType.Legs:  _legsAbility  = GetComponent<LegsAbility>();  break;
+        }
     }
 
     private void Update()
@@ -157,11 +180,10 @@ public class PlayerLocomotion : MonoBehaviour
 
     private void ExecuteJump()
     {
-        LegsAbility legsAbility = GetComponent<LegsAbility>();
-
-        if (legsAbility != null)
+        // LegsAbility toma control del salto cuando está equipada
+        if (_legsAbility != null)
         {
-            Debug.Log("[PlayerLocomotion] LegsAbility detectada - Salto base cancelado");
+            Debug.Log("[PlayerLocomotion] LegsAbility activa — salto base cancelado");
             return;
         }
 
@@ -173,16 +195,9 @@ public class PlayerLocomotion : MonoBehaviour
 
     private void ApplyMomentum()
     {
-        // NUEVO: No aplicar momentum si estamos haciendo dash
-        if (legsAbility == null)
-        {
-            legsAbility = GetComponent<BackAbility>();
-        }
-
-        if (legsAbility != null && legsAbility.IsDashing)
-        {
-            return; // Salir temprano si estamos en dash
-        }
+        // No aplicar momentum si BackAbility está ejecutando un dash
+        if (_backAbility != null && _backAbility.IsDashing)
+            return;
 
         Vector3 movementDirection = Vector3.zero;
 
@@ -366,8 +381,7 @@ public class PlayerLocomotion : MonoBehaviour
 
         GUILayout.Label($"Speed: {currentSpeed:F2} / {effectiveMaxSpeed:F2} m/s", labelStyle);
 
-        EnemyAttachmentManager attachmentManager = GetComponent<EnemyAttachmentManager>();
-        if (attachmentManager != null && attachmentManager.AttachedCount > 0)
+        if (_attachmentManager != null && _attachmentManager.AttachedCount > 0)
         {
             float adjustedMaxSpeed = GetAdjustedMaxSpeed();
             float speedReduction = ((config.maxSpeed - adjustedMaxSpeed) / config.maxSpeed) * 100f;
@@ -483,19 +497,12 @@ public class PlayerLocomotion : MonoBehaviour
     {
         float targetMaxSpeed = config.maxSpeed;
 
-        EnemyAttachmentManager attachmentManager = GetComponent<EnemyAttachmentManager>();
-        if (attachmentManager != null && attachmentManager.AttachedCount > 0)
+        if (_attachmentManager != null && _attachmentManager.AttachedCount > 0)
         {
-            // Penalización base por enemigo (configurable desde Inspector)
-            float speedPenalty = attachmentManager.AttachedCount * speedPenaltyPerEnemy;
+            float speedPenalty = _attachmentManager.AttachedCount * speedPenaltyPerEnemy;
 
-            // Reducir penalización si hay ChestAbility
-            ChestAbility chestAbility = GetComponent<ChestAbility>();
-            if (chestAbility != null)
-            {
-                float weightAssistance = chestAbility.GetWeightAssistanceMultiplier();
-                speedPenalty *= (1f - weightAssistance);
-            }
+            if (_chestAbility != null)
+                speedPenalty *= (1f - _chestAbility.GetWeightAssistanceMultiplier());
 
             targetMaxSpeed *= (1f - speedPenalty);
         }
@@ -518,7 +525,6 @@ public class PlayerLocomotion : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawRay(transform.position + Vector3.up * 0.1f, targetHorizontalVelocity);
 
-        // Indicador de drift
         if (driftController != null && driftController.IsDrifting)
         {
             Gizmos.color = Color.magenta;

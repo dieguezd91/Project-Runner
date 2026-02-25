@@ -564,6 +564,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   visualParent: {fileID: 6660822945240645772}
   prototypeSpherePrefab: {fileID: 9013367697118747842, guid: f39b610a67f2b464db51b9f10a666753, type: 3}
+  inputReader: {fileID: 11400000, guid: c8db638a9d8b4af4d93c9273323aace1, type: 2}
   showDebugGUI: 1
 --- !u!1 &3400527865651820697
 GameObject:

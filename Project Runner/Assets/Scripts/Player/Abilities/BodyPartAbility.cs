@@ -5,15 +5,18 @@ public abstract class BodyPartAbility : MonoBehaviour
     protected BodyPartData partData;
     protected PlayerLocomotion playerLocomotion;
     protected Rigidbody rb;
+    // Inyectado desde BodyPartManager.ActivateAbility — sin reflection, sin GetComponent
+    protected InputReader inputReader;
 
     protected float lastUseTime = -999f;
     protected bool isOnCooldown => Time.time < lastUseTime + GetCooldownDuration();
 
     protected bool isEnabled = true;
 
-    public virtual void Initialize(BodyPartData data)
+    public virtual void Initialize(BodyPartData data, InputReader reader)
     {
         partData = data;
+        inputReader = reader;
         playerLocomotion = GetComponent<PlayerLocomotion>();
         rb = GetComponent<Rigidbody>();
 

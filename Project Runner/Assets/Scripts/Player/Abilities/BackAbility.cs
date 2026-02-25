@@ -1,7 +1,4 @@
-using NUnit.Framework;
 using UnityEngine;
-using static UnityEngine.InputSystem.Controls.AxisControl;
-using static UnityEngine.UIElements.UxmlAttributeDescription;
 
 public class BackAbility : BodyPartAbility
 {
@@ -9,8 +6,6 @@ public class BackAbility : BodyPartAbility
     private bool isDashing;
     private float dashEndTime;
     private Vector3 dashDirection;
-
-    private InputReader inputReader;
 
     [Header("Collision")]
     private RigidbodyConstraints originalConstraints;
@@ -20,29 +15,17 @@ public class BackAbility : BodyPartAbility
 
     protected override void OnInitialize()
     {
-        PlayerLocomotion locomotion = GetComponent<PlayerLocomotion>();
-        if (locomotion != null)
-        {
-            var field = typeof(PlayerLocomotion).GetField("inputReader",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (field != null)
-            {
-                inputReader = field.GetValue(locomotion) as InputReader;
-            }
-        }
-
+        // inputReader es inyectado por BodyPartManager via base.Initialize() â€” sin reflection
         if (inputReader == null)
         {
-            Debug.LogError("[LegsAbility] No se pudo obtener InputReader");
+            Debug.LogError("[BackAbility] InputReader no fue inyectado. Asigna el InputReader en BodyPartManager.");
             return;
         }
 
-        // Guardar constraints originales
         originalConstraints = rb.constraints;
 
         inputReader.OnDashPerformed += TryDash;
-        Debug.Log("[LegsAbility] Dash habilitado - Presiona Shift para usarlo");
+        Debug.Log("[BackAbility] Dash habilitado");
     }
 
     private void OnDestroy()
@@ -142,15 +125,15 @@ public class BackAbility : BodyPartAbility
     {
         if (isDashing)
         {
-            // Detectar colisión con CUALQUIER objeto sólido, no solo "Obstacle"
-            // Verificar si la colisión es frontal (en la dirección del dash)
+            // Detectar colisiï¿½n con CUALQUIER objeto sï¿½lido, no solo "Obstacle"
+            // Verificar si la colisiï¿½n es frontal (en la direcciï¿½n del dash)
             Vector3 collisionNormal = collision.contacts[0].normal;
             float dotProduct = Vector3.Dot(dashDirection, -collisionNormal);
 
-            // Si la colisión es frontal (dot > 0.5), detener el dash
+            // Si la colisiï¿½n es frontal (dot > 0.5), detener el dash
             if (dotProduct > 0.5f)
             {
-                Debug.Log($"[LegsAbility] Dash interrumpido por colisión frontal con {collision.gameObject.name}");
+                Debug.Log($"[LegsAbility] Dash interrumpido por colisiï¿½n frontal con {collision.gameObject.name}");
 
                 // Detener movimiento horizontal
                 rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);

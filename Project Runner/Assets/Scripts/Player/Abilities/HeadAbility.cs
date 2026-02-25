@@ -7,8 +7,6 @@ public class HeadAbility : BodyPartAbility
     private bool stompActivated;
     private float stompStartHeight;
 
-    private InputReader inputReader;
-
     [Header("Ground Impact")]
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private bool showImpactRadius = true;
@@ -24,36 +22,22 @@ public class HeadAbility : BodyPartAbility
 
     protected override void OnInitialize()
     {
-        PlayerLocomotion locomotion = GetComponent<PlayerLocomotion>();
-        if (locomotion != null)
-        {
-            var field = typeof(PlayerLocomotion).GetField("inputReader",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (field != null)
-            {
-                inputReader = field.GetValue(locomotion) as InputReader;
-            }
-        }
-
+        // inputReader inyectado por BodyPartManager via base.Initialize() — sin reflection
         if (inputReader == null)
         {
-            Debug.LogError("[HeadAbility] No se pudo obtener InputReader");
+            Debug.LogError("[HeadAbility] InputReader no fue inyectado. Asigna el InputReader en BodyPartManager.");
             return;
         }
 
-        // Obtener referencia al BodyPartCollectionManager
+        // playerLocomotion ya está cacheado por la base class
         collectionManager = GetComponent<BodyPartManager>();
 
-        // El stomp se activa con el mismo botón que el stomp del sistema de vida
         inputReader.OnStompPerformed += TryStomp;
 
-        Debug.Log("[HeadAbility] Stomp habilitado - Presiona Ctrl en el aire para usarlo");
+        Debug.Log("[HeadAbility] Stomp habilitado");
 
         if (requiresLegs)
-        {
-            Debug.Log("[HeadAbility] NOTA: El Stomp requiere tener Legs equipadas para destruir obstáculos");
-        }
+            Debug.Log("[HeadAbility] NOTA: El Stomp requiere Legs equipadas para destruir obstáculos");
     }
 
     private void OnDestroy()

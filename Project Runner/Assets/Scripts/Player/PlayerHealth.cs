@@ -30,6 +30,9 @@ public class PlayerHealth : MonoBehaviour
 
     private PlayerLocomotion locomotion;
     private EnemyAttachmentManager attachmentManager;
+    private Rigidbody _rb;
+    // ArmsAbility se añade dinámicamente — se cachea via OnPartCollected
+    private ArmsAbility _armsAbility;
 
     public float CurrentShield { get; private set; }
     public float CurrentEnergy { get; private set; }
@@ -44,12 +47,31 @@ public class PlayerHealth : MonoBehaviour
 
     private void Awake()
     {
-        locomotion = GetComponent<PlayerLocomotion>();
+        locomotion        = GetComponent<PlayerLocomotion>();
         attachmentManager = GetComponent<EnemyAttachmentManager>();
+        _rb               = GetComponent<Rigidbody>();
 
         CurrentShield = maxShield;
         CurrentEnergy = maxEnergy;
-        IsDead = false;
+        IsDead        = false;
+    }
+
+    private void Start()
+    {
+        if (BodyPartManager.Instance != null)
+            BodyPartManager.Instance.OnPartCollected += OnAbilityPartCollected;
+    }
+
+    private void OnDestroy()
+    {
+        if (BodyPartManager.Instance != null)
+            BodyPartManager.Instance.OnPartCollected -= OnAbilityPartCollected;
+    }
+
+    private void OnAbilityPartCollected(BodyPartType type)
+    {
+        if (type == BodyPartType.Arms)
+            _armsAbility = GetComponent<ArmsAbility>();
     }
 
     private void Update()
@@ -167,24 +189,19 @@ public class PlayerHealth : MonoBehaviour
             float damage = impactAngle < impactAngleThreshold ? frontalImpactDamage : lateralImpactDamage;
             TakeDamage(damage, "Obstáculo");
 
-            // NUEVO: Aplicar bonus pasivo de ArmsAbility
-            ArmsAbility armsAbility = GetComponent<ArmsAbility>();
-            if (armsAbility != null)
+            // Bonus pasivo de ArmsAbility — usa referencias cacheadas en Awake/OnPartCollected
+            if (_armsAbility != null)
             {
-                Rigidbody rb = GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    float retentionPercent = armsAbility.GetCollisionSpeedRetention();
-                    Vector3 currentVelocity = rb.linearVelocity;
-                    Vector3 retainedVelocity = new Vector3(
-                        currentVelocity.x * retentionPercent,
-                        currentVelocity.y,
-                        currentVelocity.z * retentionPercent
-                    );
-                    rb.linearVelocity = retainedVelocity;
+                float retentionPercent   = _armsAbility.GetCollisionSpeedRetention();
+                Vector3 currentVelocity  = _rb.linearVelocity;
+                Vector3 retainedVelocity = new Vector3(
+                    currentVelocity.x * retentionPercent,
+                    currentVelocity.y,
+                    currentVelocity.z * retentionPercent
+                );
+                _rb.linearVelocity = retainedVelocity;
 
-                    Debug.Log($"[ArmsAbility Passive] Velocidad retenida en colisión: {currentVelocity.magnitude:F2} → {retainedVelocity.magnitude:F2} m/s ({retentionPercent * 100f}%)");
-                }
+                Debug.Log($"[ArmsAbility Passive] {currentVelocity.magnitude:F2} → {retainedVelocity.magnitude:F2} m/s ({retentionPercent * 100f}%)");
             }
         }
     }

@@ -9,6 +9,7 @@ public class BodyPartManager : MonoBehaviour
     [Header("Referencias")]
     [SerializeField] private Transform visualParent;
     [SerializeField] private GameObject prototypeSpherePrefab;
+    [SerializeField] private InputReader inputReader;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugGUI = true;
@@ -83,7 +84,7 @@ public class BodyPartManager : MonoBehaviour
 
         if (ability != null)
         {
-            ability.Initialize(partData);
+            ability.Initialize(partData, inputReader);
             Debug.Log($"[BodyPartManager] Habilidad activada: {partData.partType}");
         }
     }

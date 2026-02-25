@@ -12,9 +12,7 @@ public class ChestAbility : BodyPartAbility
     private bool hasDoubleJumped = false;
     private bool doubleJumpEnabled = false; // Flag para saber si está habilitado
 
-    private InputReader inputReader;
-    private PlayerLocomotion locomotion;
-    private LegsAbility legsAbility; // Referencia para detectar si existe
+    private LegsAbility legsAbility;
 
     [Header("Air Control")]
     private float originalAirDrag = 0f;
@@ -26,39 +24,26 @@ public class ChestAbility : BodyPartAbility
 
     protected override void OnInitialize()
     {
-        locomotion = GetComponent<PlayerLocomotion>();
-        legsAbility = GetComponent<LegsAbility>(); // Detectar si hay LegsAbility
-
-        if (locomotion != null)
-        {
-            var field = typeof(PlayerLocomotion).GetField("inputReader",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (field != null)
-            {
-                inputReader = field.GetValue(locomotion) as InputReader;
-            }
-        }
-
+        // inputReader inyectado por BodyPartManager via base.Initialize() — sin reflection
+        // playerLocomotion cacheado por la base class
         if (inputReader == null)
         {
-            Debug.LogError("[ChestAbility] No se pudo obtener InputReader");
+            Debug.LogError("[ChestAbility] InputReader no fue inyectado. Asigna el InputReader en BodyPartManager.");
             return;
         }
 
         originalAirDrag = rb.linearDamping;
 
-        // Solo habilitar double jump si hay LegsAbility
+        // Detectar si Legs ya está equipada (puede haberse añadido antes que Chest)
+        legsAbility = GetComponent<LegsAbility>();
         if (legsAbility != null)
         {
-            doubleJumpEnabled = true;
-            inputReader.OnJumpPerformed += TryDoubleJump;
-            Debug.Log("[ChestAbility] Double Jump HABILITADO (LegsAbility detectada)");
+            EnableDoubleJump();
         }
         else
         {
-            doubleJumpEnabled = false;
-            Debug.Log("[ChestAbility] Double Jump DESHABILITADO (sin LegsAbility)");
+            // Escuchar si Legs se recoge después — sin polling en Update
+            BodyPartManager.Instance.OnPartCollected += OnPartCollected;
         }
 
         Debug.Log($"[ChestAbility] Air Propellers habilitado | " +
@@ -66,40 +51,42 @@ public class ChestAbility : BodyPartAbility
                  $"Double Jump: {(doubleJumpEnabled ? "Enabled" : "Disabled")}");
     }
 
+    private void EnableDoubleJump()
+    {
+        doubleJumpEnabled = true;
+        inputReader.OnJumpPerformed += TryDoubleJump;
+        Debug.Log("[ChestAbility] Double Jump HABILITADO");
+    }
+
+    private void OnPartCollected(BodyPartType type)
+    {
+        if (type != BodyPartType.Legs || doubleJumpEnabled) return;
+
+        legsAbility = GetComponent<LegsAbility>();
+        if (legsAbility != null)
+        {
+            EnableDoubleJump();
+            // Ya no necesitamos escuchar más eventos
+            BodyPartManager.Instance.OnPartCollected -= OnPartCollected;
+        }
+    }
+
     private void OnDestroy()
     {
         if (inputReader != null && doubleJumpEnabled)
-        {
             inputReader.OnJumpPerformed -= TryDoubleJump;
-        }
+
+        // Limpiar suscripción al evento de partes si nunca llegamos a tener Legs
+        if (!doubleJumpEnabled && BodyPartManager.Instance != null)
+            BodyPartManager.Instance.OnPartCollected -= OnPartCollected;
 
         if (airControlActive)
-        {
             rb.linearDamping = originalAirDrag;
-        }
     }
 
     private void Update()
     {
-        if (playerLocomotion == null)
-        {
-            return;
-        }
-
-        // Actualizar detección de LegsAbility (por si se añade después)
-        if (!doubleJumpEnabled && legsAbility == null)
-        {
-            legsAbility = GetComponent<LegsAbility>();
-            if (legsAbility != null)
-            {
-                doubleJumpEnabled = true;
-                if (inputReader != null)
-                {
-                    inputReader.OnJumpPerformed += TryDoubleJump;
-                    Debug.Log("[ChestAbility] Double Jump HABILITADO (LegsAbility adquirida)");
-                }
-            }
-        }
+        if (playerLocomotion == null) return;
 
         // Resetear saltos disponibles cuando tocamos el suelo (solo si double jump está habilitado)
         if (doubleJumpEnabled && playerLocomotion.IsGrounded())
